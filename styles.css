@@ -1,0 +1,417 @@
+:root {
+  --paper: #efe3c5;
+  --paper-deep: #d2ba84;
+  --ink: #231815;
+  --red: #9f1f1f;
+  --black: #23272f;
+  --river: #c9d6d2;
+  --accent: #4c6b58;
+  --accent-soft: #dfe9e3;
+  --panel: rgba(255, 250, 236, 0.92);
+  --shadow: 0 22px 60px rgba(45, 30, 15, 0.18);
+  --han-calligraphy:
+    "STXingkai",
+    "HanziPen SC",
+    "Kaiti SC",
+    "KaiTi",
+    "DFKai-SB",
+    "Songti SC",
+    serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Bitter", serif;
+  color: var(--ink);
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(255, 241, 203, 0.8), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(126, 156, 135, 0.35), transparent 35%),
+    linear-gradient(140deg, #f4ead0, #d8c59a 55%, #c2b082);
+}
+
+.page-shell {
+  width: min(1380px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 32px 0 40px;
+}
+
+.hero {
+  margin-bottom: 24px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-size: 0.8rem;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(2.2rem, 5vw, 4rem);
+}
+
+.hero-copy {
+  width: min(760px, 100%);
+  margin: 12px 0 0;
+  line-height: 1.55;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(540px, 1.15fr) minmax(320px, 0.85fr);
+  gap: 24px;
+}
+
+.board-panel,
+.card {
+  background: var(--panel);
+  border: 1px solid rgba(60, 40, 20, 0.12);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.board-panel {
+  padding: 20px;
+}
+
+.board-subpanel {
+  margin-top: 18px;
+  background: rgba(255, 251, 241, 0.86);
+  box-shadow: none;
+}
+
+.control-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.card {
+  padding: 18px;
+}
+
+.card h2 {
+  margin-top: 0;
+}
+
+.board-toolbar,
+.toolbar-group,
+.inline-fields {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.board-toolbar {
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.wrap {
+  flex-wrap: wrap;
+}
+
+button,
+select,
+input,
+textarea {
+  font: inherit;
+}
+
+button,
+select,
+input,
+textarea {
+  border-radius: 14px;
+  border: 1px solid rgba(50, 34, 18, 0.2);
+  background: rgba(255, 252, 244, 0.95);
+}
+
+button {
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+button:hover:enabled {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(67, 51, 20, 0.12);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.primary-button {
+  background: linear-gradient(135deg, #5d7d69, #395241);
+  color: #fff9ee;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(72, 100, 83, 0.12);
+  color: var(--accent);
+  font-size: 0.92rem;
+}
+
+.board-wrap {
+  width: min(100%, 720px);
+  margin: 0 auto;
+  container-type: inline-size;
+  --cell-size: 11.111cqw;
+  --coord-font-size: calc(var(--cell-size) * 0.28);
+  --river-font-size: calc(var(--cell-size) * 0.95);
+  --river-letter-spacing: calc(var(--cell-size) * 0.035);
+  --marker-size: calc(var(--cell-size) * 0.17);
+  --piece-disc-size: calc(var(--cell-size) * 0.88);
+  --piece-font-size: calc(var(--piece-disc-size) * 0.54);
+  --palette-disc-size: clamp(44px, calc(var(--cell-size) * 0.7), 60px);
+  --palette-font-size: calc(var(--palette-disc-size) * 0.56);
+}
+
+.board-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 8px;
+  align-items: stretch;
+}
+
+.board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-rows: repeat(10, minmax(0, 1fr));
+  width: 100%;
+  aspect-ratio: 9 / 10;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #f4dba7, #dbb573);
+  overflow: hidden;
+}
+
+.board::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 10' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='%23502e12' stroke-width='0.04' stroke-linecap='square'%3E%3Crect x='0.2' y='0.2' width='8.6' height='9.6' rx='0.22'/%3E%3Cpath d='M0.5 0.5H8.5M0.5 1.5H8.5M0.5 2.5H8.5M0.5 3.5H8.5M0.5 4.5H8.5M0.5 5.5H8.5M0.5 6.5H8.5M0.5 7.5H8.5M0.5 8.5H8.5M0.5 9.5H8.5'/%3E%3Cpath d='M0.5 0.5V9.5M1.5 0.5V4.5M1.5 5.5V9.5M2.5 0.5V4.5M2.5 5.5V9.5M3.5 0.5V4.5M3.5 5.5V9.5M4.5 0.5V4.5M4.5 5.5V9.5M5.5 0.5V4.5M5.5 5.5V9.5M6.5 0.5V4.5M6.5 5.5V9.5M7.5 0.5V4.5M7.5 5.5V9.5M8.5 0.5V9.5'/%3E%3Cpath d='M3.5 0.5L5.5 2.5M5.5 0.5L3.5 2.5M3.5 7.5L5.5 9.5M5.5 7.5L3.5 9.5'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+.board::after {
+  content: "楚河      汉界";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--han-calligraphy);
+  font-size: var(--river-font-size);
+  letter-spacing: var(--river-letter-spacing);
+  color: rgba(35, 24, 21, 0.55);
+  pointer-events: none;
+  white-space: pre;
+}
+
+.square {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+.square::before {
+  content: "";
+  width: var(--marker-size);
+  height: var(--marker-size);
+  border-radius: 999px;
+  background: rgba(66, 39, 16, 0.5);
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.square.legal::before,
+.square.selected::before {
+  opacity: 1;
+}
+
+.square.legal::before {
+  background: rgba(77, 106, 89, 0.75);
+}
+
+.square.selected::before {
+  background: rgba(169, 44, 36, 0.75);
+}
+
+.piece {
+  position: absolute;
+  width: var(--piece-disc-size);
+  height: var(--piece-disc-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  border: 2px solid rgba(80, 46, 18, 0.9);
+  background: radial-gradient(circle at 30% 25%, #fff9ec, #ead39d 65%, #d6b171);
+  box-shadow: 0 10px 18px rgba(60, 36, 14, 0.18);
+  font-family: var(--han-calligraphy);
+  font-size: var(--piece-font-size);
+  font-weight: 700;
+  transition: transform 160ms ease;
+}
+
+.piece.red {
+  color: var(--red);
+}
+
+.piece.black {
+  color: var(--black);
+}
+
+.square:hover .piece {
+  transform: translate(-50%, -50%) scale(1.04);
+}
+
+.board-coords {
+  display: grid;
+  font-size: var(--coord-font-size);
+  color: rgba(35, 24, 21, 0.7);
+}
+
+.board-coords.files {
+  grid-template-columns: repeat(9, 1fr);
+  margin: 0 36px;
+}
+
+.board-coords.ranks {
+  grid-template-rows: repeat(10, 1fr);
+}
+
+.board-coords span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.board-footer {
+  margin-top: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.board-footer p,
+.helper-copy {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.palette {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.palette-option {
+  min-height: 58px;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  text-align: center;
+}
+
+.palette-option.active {
+  background: rgba(76, 107, 88, 0.18);
+  border-color: rgba(76, 107, 88, 0.35);
+}
+
+.palette-piece {
+  width: var(--palette-disc-size);
+  height: var(--palette-disc-size);
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 2px solid rgba(80, 46, 18, 0.9);
+  background: radial-gradient(circle at 30% 25%, #fff9ec, #ead39d 65%, #d6b171);
+  font-family: var(--han-calligraphy);
+  font-size: var(--palette-font-size);
+}
+
+.palette-piece.red {
+  color: var(--red);
+}
+
+.palette-piece.black {
+  color: var(--black);
+}
+
+.field-label,
+label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.95rem;
+}
+
+textarea,
+input,
+select {
+  width: 100%;
+  padding: 10px 12px;
+}
+
+.gif-preview {
+  width: 100%;
+  display: none;
+  margin-top: 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(70, 48, 24, 0.12);
+}
+
+code {
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
+  background: rgba(76, 107, 88, 0.12);
+}
+
+@media (max-width: 1080px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .page-shell {
+    width: min(100vw - 20px, 100%);
+    padding-top: 20px;
+  }
+
+  .board-panel,
+  .card {
+    border-radius: 18px;
+  }
+
+  .board {
+    border-radius: 18px;
+  }
+
+  .palette {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

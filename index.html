@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Xiangqi GIF Maker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <p class="eyebrow">Static GitHub Pages Tool</p>
+        <h1>Xiangqi GIF Maker</h1>
+        <p class="hero-copy">
+          Set up a position, play moves on the board, or import a game in FEN +
+          ICCS/UCCI coordinates, then export an animated GIF you can download or
+          copy.
+        </p>
+      </header>
+
+      <main class="workspace">
+        <section class="board-panel">
+          <div class="board-toolbar">
+            <div class="toolbar-group">
+              <button id="play-toggle" class="primary-button">Switch To Play Mode</button>
+              <button id="clear-board">Clear Board</button>
+              <button id="reset-start">Reset Start Position</button>
+            </div>
+            <div class="toolbar-group">
+              <span class="status-pill" id="mode-pill">Editor</span>
+              <span class="status-pill" id="turn-pill">Red To Move</span>
+            </div>
+          </div>
+
+          <div class="board-wrap">
+            <div class="board-coords files top" id="files-top"></div>
+            <div class="board-row">
+              <div class="board-coords ranks left" id="ranks-left"></div>
+              <div id="board" class="board" aria-label="Xiangqi board"></div>
+            </div>
+          </div>
+
+          <div class="board-footer">
+            <p id="selection-label">Select a piece from the editor palette, then click a square.</p>
+            <p id="move-log-summary">No moves recorded.</p>
+          </div>
+
+          <section class="card board-subpanel">
+            <h2>Playback</h2>
+            <div class="toolbar-group wrap">
+              <button id="undo-move">Undo Last Move</button>
+              <button id="step-back">Step Back</button>
+              <button id="step-forward">Step Forward</button>
+              <button id="play-sequence">Preview Sequence</button>
+            </div>
+            <p class="helper-copy" id="playback-summary">
+              The current board is the live working position.
+            </p>
+          </section>
+        </section>
+
+        <aside class="control-panel">
+          <section class="card">
+            <h2>Editor Palette</h2>
+            <div id="palette" class="palette"></div>
+          </section>
+
+          <section class="card">
+            <h2>Game Import</h2>
+            <label class="field-label" for="fen-input">FEN</label>
+            <textarea id="fen-input" rows="3"></textarea>
+            <label class="field-label" for="moves-input">Moves</label>
+            <textarea
+              id="moves-input"
+              rows="6"
+              placeholder="Example: h2e2 h9g7 e2e7"
+            ></textarea>
+            <div class="inline-fields">
+              <label>
+                Side To Move
+                <select id="side-select">
+                  <option value="w">Red</option>
+                  <option value="b">Black</option>
+                </select>
+              </label>
+              <label>
+                Frame Delay (ms)
+                <input id="delay-input" type="number" min="100" step="50" value="650" />
+              </label>
+            </div>
+            <div class="toolbar-group">
+              <button id="load-fen">Load FEN</button>
+              <button id="import-game">Import Game</button>
+            </div>
+            <p class="helper-copy">
+              Supported moves use ICCS/UCCI coordinates such as <code>h2e2</code>.
+              FEN is optional for imports; if omitted, the standard start position is used.
+            </p>
+          </section>
+
+          <section class="card">
+            <h2>GIF Export</h2>
+            <div class="toolbar-group wrap">
+              <button id="render-gif" class="primary-button">Render GIF</button>
+              <button id="download-gif" disabled>Download GIF</button>
+              <button id="copy-gif" disabled>Copy GIF</button>
+            </div>
+            <p id="gif-status" class="helper-copy">No GIF rendered yet.</p>
+            <img id="gif-preview" class="gif-preview" alt="Generated GIF preview" />
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <script src="./vendor-gif.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
