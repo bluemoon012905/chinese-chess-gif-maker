@@ -111,7 +111,10 @@ function buildPalette() {
     button.dataset.piece = piece;
 
     if (piece === ".") {
-      button.textContent = "Erase";
+      const badge = document.createElement("span");
+      badge.className = "palette-piece erase-piece";
+      badge.setAttribute("aria-hidden", "true");
+      button.append(badge);
     } else {
       const badge = document.createElement("span");
       badge.className = "palette-piece";
@@ -152,6 +155,13 @@ function buildBoard() {
 function attachEventListeners() {
   playToggleButton.addEventListener("click", () => {
     state.mode = state.mode === "edit" ? "play" : "edit";
+    clearSelection();
+    render();
+  });
+
+  turnPill.addEventListener("click", () => {
+    state.turn = state.turn === "w" ? "b" : "w";
+    state.baseTurn = state.turn;
     clearSelection();
     render();
   });
@@ -280,6 +290,8 @@ function renderBoard() {
 function renderStatus() {
   modePill.textContent = state.mode === "edit" ? "Editor" : "Play";
   turnPill.textContent = state.turn === "w" ? "Red To Move" : "Black To Move";
+  turnPill.classList.toggle("turn-red", state.turn === "w");
+  turnPill.classList.toggle("turn-black", state.turn === "b");
   playToggleButton.textContent =
     state.mode === "edit" ? "Switch To Play Mode" : "Switch To Edit Mode";
 
