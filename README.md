@@ -2,6 +2,8 @@
 
 Static browser app for GitHub Pages.
 
+Live page: <https://bluemoon012905.github.io/chinese-chess-gif-maker/>
+
 ## Features
 
 - Edit a Xiangqi board from scratch by placing or removing pieces on intersections.
