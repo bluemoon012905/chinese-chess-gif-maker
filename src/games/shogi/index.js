@@ -62,7 +62,7 @@ const PIECE_ANIMALS = {
   "+P": "Rabbit+",
 };
 
-const STANDARD_SFEN = "lnsgkgsnl/1r5b1/p1pppp1pp/6p2/9/2P6/PP1PPPPPP/1B5R1/LNSGKGSNL b - 1";
+const STANDARD_SFEN = "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1";
 const PALETTE = ["K", "R", "B", "G", "S", "N", "L", "P", "k", "r", "b", "g", "s", "n", "l", "p", "."];
 
 const VARIANTS = {
@@ -290,7 +290,6 @@ export function mountShogi(root) {
       } else {
         const badge = document.createElement("span");
         badge.className = "palette-piece";
-        badge.textContent = piece.toUpperCase();
         button.append(badge);
       }
       button.addEventListener("click", () => {
@@ -305,6 +304,15 @@ export function mountShogi(root) {
   function renderPalette() {
     get("palette").querySelectorAll(".palette-option").forEach((button) => {
       button.classList.toggle("active", button.dataset.piece === state.manual.paletteSelection);
+      const badge = button.querySelector(".palette-piece");
+      if (!badge || button.dataset.piece === ".") {
+        return;
+      }
+      const piece = button.dataset.piece;
+      const theme = THEMES[get("theme-select").value] || THEMES.character;
+      badge.textContent = theme.render(piece.toUpperCase());
+      badge.classList.toggle("black", piece === piece.toUpperCase());
+      badge.classList.toggle("red", piece !== piece.toUpperCase());
     });
   }
 
@@ -444,7 +452,16 @@ export function mountShogi(root) {
         if (state.previewMove < state.manual.moves.length) {
           state.manual.moves = state.manual.moves.slice(0, state.previewMove);
         }
-        state.manual.moves.push({ usi: move.usi, label: move.usi });
+        let usi = move.usi;
+        if (move.mustPromote) {
+          usi += "+";
+        } else if (move.canPromote) {
+          const shouldPromoteMove = window.confirm("Promote this piece?");
+          if (shouldPromoteMove) {
+            usi += "+";
+          }
+        }
+        state.manual.moves.push({ usi, label: usi });
         state.previewMove = state.manual.moves.length;
         rebuildManualPositions();
         render();
@@ -565,11 +582,11 @@ function drawShogiPiece(ctx, centerX, centerY, cell, side, label) {
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = side === "b" ? "#1d1a16" : "#8b2220";
-  ctx.font = `700 ${cell * 0.2}px ${CHINESE_FONT_FAMILY}`;
+  ctx.font = `700 ${cell * 0.36}px ${CHINESE_FONT_FAMILY}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   const lines = label.length > 3 ? [label.slice(0, 4), label.slice(4)] : [label];
-  lines.forEach((line, index) => ctx.fillText(line, 0, (index - (lines.length - 1) / 2) * cell * 0.17));
+  lines.forEach((line, index) => ctx.fillText(line, 0, (index - (lines.length - 1) / 2) * cell * 0.25));
   ctx.restore();
 }
 
@@ -690,8 +707,13 @@ function generateShogiMoves(position, x, y) {
       if (target && target.side === piece.side) {
         break;
       }
-      const usi = `${coordsToShogiSquare(x, y)}${coordsToShogiSquare(nx, ny)}${shouldPromote(piece.kind, piece.side, y, ny) ? "+" : ""}`;
-      moves.push({ from: { x, y }, to: { x: nx, y: ny }, usi });
+      moves.push({
+        from: { x, y },
+        to: { x: nx, y: ny },
+        usi: `${coordsToShogiSquare(x, y)}${coordsToShogiSquare(nx, ny)}`,
+        canPromote: isPromotionAvailable(piece.kind, piece.side, y, ny),
+        mustPromote: isPromotionRequired(piece.kind, piece.side, ny),
+      });
       if (target || !direction.repeat) {
         break;
       }
@@ -743,12 +765,26 @@ function getPieceDirections(kind, forward) {
   }
 }
 
-function shouldPromote(kind, side, fromY, toY) {
+function isPromotionAvailable(kind, side, fromY, toY) {
   if (!canPromote(kind)) {
     return false;
   }
   const zone = side === "b" ? [0, 1, 2] : [6, 7, 8];
   return zone.includes(fromY) || zone.includes(toY);
+}
+
+function isPromotionRequired(kind, side, toY) {
+  const base = kind.replace("+", "");
+  if (!canPromote(base)) {
+    return false;
+  }
+  if (base === "P" || base === "L") {
+    return side === "b" ? toY === 0 : toY === 8;
+  }
+  if (base === "N") {
+    return side === "b" ? toY <= 1 : toY >= 7;
+  }
+  return false;
 }
 
 function canPromote(kind) {

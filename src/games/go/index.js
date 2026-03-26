@@ -1,7 +1,5 @@
 import {
-  CHINESE_FONT_FAMILY,
   UI_FONT_FAMILY,
-  buildBranchOptions,
   clamp,
   cropCanvas,
   createBoardCanvas,
@@ -19,7 +17,7 @@ const GO_THEMES = {
 
 export function mountGo(root) {
   root.innerHTML = `
-    <div class="mode-shell">
+    <div class="mode-shell mode-shell-go">
       <section class="board-panel">
         <div class="board-toolbar">
           <div class="toolbar-group">
@@ -33,13 +31,42 @@ export function mountGo(root) {
             <span class="status-pill" data-id="branch-summary">Manual Board</span>
           </div>
         </div>
-        <div class="canvas-board-wrap">
-          <canvas data-id="board-canvas" class="board-canvas" width="720" height="720"></canvas>
+        <div class="canvas-board-wrap go-canvas-board-wrap">
+          <canvas data-id="board-canvas" class="board-canvas" width="820" height="820"></canvas>
         </div>
         <div class="board-footer">
           <p data-id="position-summary">Use editor mode to place stones or parse an SGF branch, then switch to play mode for move-by-move reading.</p>
           <p data-id="selection-summary">Range export works for SGF branches and manual play lines.</p>
         </div>
+        <section class="card board-subpanel go-board-subpanel">
+          <div class="go-board-subpanel-grid">
+            <section class="go-board-subsection">
+              <div class="go-subsection-header">
+                <h2>Branch Tree</h2>
+                <span class="status-pill" data-id="tree-summary">Manual Line</span>
+              </div>
+              <p class="helper-copy" data-id="tree-copy">Parse an SGF to inspect variations as a move tree.</p>
+              <div data-id="branch-tree" class="go-branch-tree"></div>
+            </section>
+            <section class="go-board-subsection">
+              <div class="go-subsection-header">
+                <h2>Range & Crop</h2>
+                <button data-id="crop-edit-toggle" type="button">Edit Crop On Board</button>
+              </div>
+              <div class="inline-fields">
+                <label>Start Move <input data-id="range-start" type="number" min="0" step="1" value="0" /></label>
+                <label>End Move <input data-id="range-end" type="number" min="0" step="1" value="0" /></label>
+              </div>
+              <p class="helper-copy" data-id="range-summary">Exporting the full sequence.</p>
+              <div class="toggle-list go-board-toggles">
+                <label class="toggle-option"><input data-id="crop-toggle" type="checkbox" /> <span>Use Crop Region</span></label>
+                <label class="toggle-option"><input data-id="show-coords" type="checkbox" /> <span>Show Coordinates</span></label>
+                <label class="toggle-option"><input data-id="show-turn" type="checkbox" /> <span>Show Turn Indicator</span></label>
+              </div>
+              <p class="helper-copy" data-id="crop-summary">Crop the full board or drag the corner handles directly on the board.</p>
+            </section>
+          </div>
+        </section>
       </section>
       <aside class="control-panel">
         <section class="card">
@@ -71,20 +98,12 @@ export function mountGo(root) {
           </div>
         </section>
         <section class="card">
-          <h2>Branch & Range</h2>
-          <label class="field-label">
-            Branch
-            <select data-id="branch-select"></select>
-          </label>
+          <h2>Playback</h2>
           <label class="field-label">
             Preview Move
             <input data-id="preview-slider" type="range" min="0" max="0" value="0" />
           </label>
-          <div class="inline-fields">
-            <label>Start Move <input data-id="range-start" type="number" min="0" step="1" value="0" /></label>
-            <label>End Move <input data-id="range-end" type="number" min="0" step="1" value="0" /></label>
-          </div>
-          <p class="helper-copy" data-id="range-summary">Move range export is enabled after parsing or manual play.</p>
+          <p class="helper-copy">Range defaults to the entire active line whenever the line changes.</p>
           <label class="field-label">
             Move List
             <textarea data-id="move-list" rows="10" readonly></textarea>
@@ -107,19 +126,6 @@ export function mountGo(root) {
                 <option value="none">No Labels</option>
               </select>
             </label>
-          </div>
-          <div class="toggle-list">
-            <label class="toggle-option"><input data-id="crop-toggle" type="checkbox" /> <span>Use Crop Region</span></label>
-            <label class="toggle-option"><input data-id="show-coords" type="checkbox" /> <span>Show Coordinates</span></label>
-            <label class="toggle-option"><input data-id="show-turn" type="checkbox" /> <span>Show Turn Indicator</span></label>
-          </div>
-          <div class="inline-fields">
-            <label>X1 <input data-id="crop-x1" type="number" min="1" max="19" value="1" /></label>
-            <label>X2 <input data-id="crop-x2" type="number" min="1" max="19" value="19" /></label>
-          </div>
-          <div class="inline-fields">
-            <label>Y1 <input data-id="crop-y1" type="number" min="1" max="19" value="1" /></label>
-            <label>Y2 <input data-id="crop-y2" type="number" min="1" max="19" value="19" /></label>
           </div>
         </section>
         <section class="card">
@@ -155,6 +161,15 @@ export function mountGo(root) {
     currentPath: [],
     currentStates: [emptyPosition(19)],
     previewMove: 0,
+    crop: {
+      enabled: false,
+      editing: false,
+      dragHandle: null,
+      x1: 1,
+      y1: 1,
+      x2: 19,
+      y2: 19,
+    },
     manual: {
       baseState: emptyPosition(19),
       states: [emptyPosition(19)],
@@ -165,6 +180,9 @@ export function mountGo(root) {
 
   buildPalette();
   canvas.addEventListener("click", handleCanvasClick);
+  canvas.addEventListener("mousedown", handleCropPointerDown);
+  window.addEventListener("mousemove", handleCropPointerMove);
+  window.addEventListener("mouseup", handleCropPointerUp);
   get("play-toggle").addEventListener("click", () => {
     state.uiMode = state.uiMode === "edit" ? "play" : "edit";
     render();
@@ -197,11 +215,6 @@ export function mountGo(root) {
     render();
   });
   get("load-sgf").addEventListener("click", loadSgf);
-  get("branch-select").addEventListener("change", () => {
-    state.branchIndex = Number(get("branch-select").value) || 0;
-    state.source = "sgf";
-    setCurrentBranch();
-  });
   get("preview-slider").addEventListener("input", () => {
     state.previewMove = clamp(Number(get("preview-slider").value) || 0, 0, getActiveHistory().length);
     render();
@@ -217,22 +230,33 @@ export function mountGo(root) {
     get("crop-toggle"),
     get("show-coords"),
     get("show-turn"),
-    get("crop-x1"),
-    get("crop-x2"),
-    get("crop-y1"),
-    get("crop-y2"),
   ].forEach((input) => input.addEventListener("input", () => {
     if (input === get("board-size") && state.source === "manual") {
       state.boardSize = Number(get("board-size").value) || state.boardSize;
       state.manual.baseState = emptyPosition(state.boardSize);
       state.manual.history = [];
+      resetCropToBoard(state.boardSize);
       rebuildManualStates();
+    }
+    if (input === get("crop-toggle")) {
+      state.crop.enabled = get("crop-toggle").checked;
+      if (!state.crop.enabled) {
+        state.crop.editing = false;
+        state.crop.dragHandle = null;
+      }
     }
     render();
   }));
+  get("crop-edit-toggle").addEventListener("click", () => {
+    state.crop.enabled = true;
+    get("crop-toggle").checked = true;
+    state.crop.editing = !state.crop.editing;
+    state.crop.dragHandle = null;
+    render();
+  });
   get("render-gif").addEventListener("click", exportGif);
 
-  seedManualBranch();
+  resetCropToBoard(state.boardSize);
   render();
 
   return {
@@ -301,24 +325,16 @@ export function mountGo(root) {
     });
   }
 
-  function seedManualBranch() {
-    const select = get("branch-select");
-    select.innerHTML = "";
-    const option = document.createElement("option");
-    option.value = "0";
-    option.textContent = "Manual Line";
-    select.append(option);
-  }
-
   function loadSgf() {
     try {
       const parsed = parseSgf(get("sgf-input").value, Number(get("board-size").value) || 19);
       state.tree = parsed.root;
       state.boardSize = parsed.size;
       get("board-size").value = String(parsed.size);
-      state.branchPaths = buildBranchOptions(get("branch-select"), parsed.root, (node) => node.label);
+      state.branchPaths = enumerateBranchPaths(parsed.root);
       state.branchIndex = 0;
       state.source = "sgf";
+      resetCropToBoard(parsed.size);
       setCurrentBranch();
       get("position-summary").textContent = `SGF parsed for ${parsed.size}x${parsed.size}. ${state.branchPaths.length} branch${state.branchPaths.length === 1 ? "" : "es"} available.`;
     } catch (error) {
@@ -329,6 +345,7 @@ export function mountGo(root) {
   function setCurrentBranch() {
     state.currentPath = state.branchPaths[state.branchIndex] || [];
     state.currentStates = buildStatesForPath(state.currentPath, state.tree.initialState);
+    resetRangeInputs();
     state.previewMove = clamp(state.previewMove, 0, state.currentPath.length);
     render();
   }
@@ -352,9 +369,9 @@ export function mountGo(root) {
       current = applyGoMove(clonePosition(current), entry.point, entry.color);
       state.manual.states.push(clonePosition(current));
     });
+    resetRangeInputs();
     state.previewMove = clamp(state.previewMove, 0, state.manual.history.length);
     state.boardSize = state.manual.baseState.size;
-    seedManualBranch();
   }
 
   function normalizeExportInputs() {
@@ -371,8 +388,15 @@ export function mountGo(root) {
     };
   }
 
+  function resetRangeInputs() {
+    const total = getActiveHistory().length;
+    get("range-start").value = "0";
+    get("range-end").value = String(total);
+  }
+
   function render() {
     renderPalette();
+    renderBranchTree();
     const activeHistory = getActiveHistory();
     const activeStates = getActiveStates();
     const previewSlider = get("preview-slider");
@@ -386,36 +410,51 @@ export function mountGo(root) {
     get("turn-pill").textContent = active.turn === "B" ? "Black To Move" : "White To Move";
     get("turn-pill").classList.toggle("turn-black", active.turn === "B");
     get("turn-pill").classList.toggle("turn-red", active.turn === "W");
+    get("tree-summary").textContent =
+      state.source === "manual"
+        ? `Manual Line · ${state.manual.history.length} move${state.manual.history.length === 1 ? "" : "s"}`
+        : `Branch ${state.branchIndex + 1} · ${state.currentPath.length} move${state.currentPath.length === 1 ? "" : "s"}`;
     get("branch-summary").textContent =
       state.source === "manual"
         ? `Manual Line · ${state.manual.history.length} move${state.manual.history.length === 1 ? "" : "s"}`
         : `Branch ${state.branchIndex + 1} · ${state.currentPath.length} move${state.currentPath.length === 1 ? "" : "s"}`;
     const range = getRange();
-    get("range-summary").textContent = `Exporting moves ${range.start} to ${range.end}.`;
+    get("tree-copy").textContent =
+      state.source === "manual"
+        ? "Manual board play is shown as a single line."
+        : "Click any move in the tree to switch to that SGF branch and preview that move.";
+    get("range-summary").textContent = `Exporting moves ${range.start} to ${range.end} of ${activeHistory.length}.`;
     get("move-list").value = formatMoveList(activeHistory.map((item) => item.label || `${item.color} ${toSgfPoint(item.point.x, item.point.y)}`));
     get("selection-summary").textContent =
       state.uiMode === "edit"
         ? "Editor mode places or erases stones directly."
         : "Play mode alternates turns and applies captures.";
+    get("crop-edit-toggle").textContent = state.crop.editing ? "Finish Crop Editing" : "Edit Crop On Board";
+    get("crop-summary").textContent = state.crop.enabled
+      ? state.crop.editing
+        ? "Drag any highlighted corner on the board to reshape the crop."
+        : describeCropSelection()
+      : "Crop is off. Enable it and drag the corner handles on the board when needed.";
     drawPreview();
   }
 
   function getCropRect() {
-    const size = Number(get("board-size").value) || state.boardSize;
-    const x1 = clamp(Number(get("crop-x1").value) || 1, 1, size);
-    const x2 = clamp(Number(get("crop-x2").value) || size, x1, size);
-    const y1 = clamp(Number(get("crop-y1").value) || 1, 1, size);
-    const y2 = clamp(Number(get("crop-y2").value) || size, y1, size);
-    get("crop-x1").value = String(x1);
-    get("crop-x2").value = String(x2);
-    get("crop-y1").value = String(y1);
-    get("crop-y2").value = String(y2);
-    const metrics = getGoMetrics(canvas.width, canvas.height, size, get("show-coords").checked);
+    const crop = normalizeCropState();
+    const metrics = getGoMetrics(canvas.width, canvas.height, crop.size, get("show-coords").checked);
+    const margin = metrics.cell * 0.55;
+    const left = metrics.originX + (crop.x1 - 1) * metrics.cell - margin;
+    const top = metrics.originY + (crop.y1 - 1) * metrics.cell - margin;
+    const right = metrics.originX + (crop.x2 - 1) * metrics.cell + margin;
+    const bottom = metrics.originY + (crop.y2 - 1) * metrics.cell + margin;
+    const x = Math.max(0, Math.floor(left));
+    const y = Math.max(0, Math.floor(top));
+    const safeRight = Math.min(canvas.width, Math.ceil(right));
+    const safeBottom = Math.min(canvas.height, Math.ceil(bottom));
     return {
-      x: metrics.originX + (x1 - 1) * metrics.cell - metrics.cell * 0.55,
-      y: metrics.originY + (y1 - 1) * metrics.cell - metrics.cell * 0.55,
-      width: (x2 - x1 + 1) * metrics.cell + metrics.cell * 0.1,
-      height: (y2 - y1 + 1) * metrics.cell + metrics.cell * 0.1,
+      x,
+      y,
+      width: Math.max(1, safeRight - x),
+      height: Math.max(1, safeBottom - y),
     };
   }
 
@@ -426,11 +465,17 @@ export function mountGo(root) {
       showCoords: get("show-coords").checked,
       showTurnIndicator: get("show-turn").checked,
       labelMode: get("label-mode").value,
-      overlayCrop: get("crop-toggle").checked ? getCropRect() : null,
+      overlayCrop: state.crop.enabled ? getCropRect() : null,
+      cropHandles: state.crop.enabled ? getCropHandles() : [],
+      cropEditing: state.crop.enabled && state.crop.editing,
+      dragHandle: state.crop.dragHandle,
     });
   }
 
   function handleCanvasClick(event) {
+    if (state.crop.enabled && state.crop.editing) {
+      return;
+    }
     const point = canvasPointToIntersection(canvas, event, get("show-coords").checked, Number(get("board-size").value) || state.boardSize);
     if (!point) {
       return;
@@ -471,9 +516,42 @@ export function mountGo(root) {
     render();
   }
 
+  function handleCropPointerDown(event) {
+    if (!state.crop.enabled || !state.crop.editing) {
+      return;
+    }
+    const handle = getCropHandleAtEvent(event);
+    if (!handle) {
+      return;
+    }
+    state.crop.dragHandle = handle;
+    event.preventDefault();
+    render();
+  }
+
+  function handleCropPointerMove(event) {
+    if (!state.crop.dragHandle) {
+      return;
+    }
+    const point = canvasPointToIntersection(canvas, event, get("show-coords").checked, state.boardSize);
+    if (!point) {
+      return;
+    }
+    updateCropFromHandle(state.crop.dragHandle, point);
+    render();
+  }
+
+  function handleCropPointerUp() {
+    if (!state.crop.dragHandle) {
+      return;
+    }
+    state.crop.dragHandle = null;
+    render();
+  }
+
   async function exportGif() {
     const range = getRange();
-    const crop = get("crop-toggle").checked ? getCropRect() : null;
+    const crop = state.crop.enabled ? getCropRect() : null;
     const frames = [];
     for (let index = range.start; index <= range.end; index += 1) {
       const frameCanvas = createBoardCanvas(720, 720);
@@ -499,6 +577,154 @@ export function mountGo(root) {
     } catch (error) {
       get("gif-status").textContent = error.message;
     }
+  }
+
+  function renderBranchTree() {
+    const tree = get("branch-tree");
+    tree.innerHTML = "";
+    if (state.source === "manual") {
+      const manualLine = document.createElement("div");
+      manualLine.className = "go-branch-line";
+      if (!state.manual.history.length) {
+        const empty = document.createElement("span");
+        empty.className = "go-tree-empty";
+        empty.textContent = "No moves yet.";
+        manualLine.append(empty);
+      } else {
+        state.manual.history.forEach((move, index) => {
+          manualLine.append(createMoveChip(move, index, true, () => {
+            state.previewMove = index + 1;
+            render();
+          }, index === 0));
+        });
+      }
+      tree.append(manualLine);
+      return;
+    }
+
+    state.branchPaths.forEach((path, branchIndex) => {
+      const row = document.createElement("div");
+      row.className = "go-branch-line";
+      if (!path.length) {
+        const empty = document.createElement("span");
+        empty.className = "go-tree-empty";
+        empty.textContent = "Empty branch.";
+        row.append(empty);
+      } else {
+        path.forEach((node, index) => {
+          row.append(createMoveChip(
+            nodeToMove(node),
+            index,
+            branchIndex === state.branchIndex && index < state.currentPath.length && state.currentPath[index]?.id === node.id,
+            () => {
+              state.source = "sgf";
+              state.branchIndex = branchIndex;
+              state.currentPath = state.branchPaths[branchIndex] || [];
+              state.currentStates = buildStatesForPath(state.currentPath, state.tree.initialState);
+              state.previewMove = index + 1;
+              resetRangeInputs();
+              render();
+            },
+            index === 0
+          ));
+        });
+      }
+      tree.append(row);
+    });
+  }
+
+  function createMoveChip(move, index, active, onClick, isFirst = false) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "go-tree-move";
+    if (isFirst) {
+      button.classList.add("first");
+    }
+    if (active) {
+      button.classList.add("active");
+    }
+    if (state.previewMove === index + 1 && active) {
+      button.classList.add("active-preview");
+    }
+    button.addEventListener("click", onClick);
+
+    const stone = document.createElement("span");
+    stone.className = `go-tree-stone ${move.color === "B" ? "black" : "white"}`;
+    stone.textContent = index + 1;
+    button.setAttribute("aria-label", move.label);
+    button.append(stone);
+    return button;
+  }
+
+  function normalizeCropState() {
+    const size = Number(get("board-size").value) || state.boardSize;
+    state.crop.x1 = clamp(state.crop.x1, 1, size);
+    state.crop.x2 = clamp(state.crop.x2, state.crop.x1, size);
+    state.crop.y1 = clamp(state.crop.y1, 1, size);
+    state.crop.y2 = clamp(state.crop.y2, state.crop.y1, size);
+    return { ...state.crop, size };
+  }
+
+  function resetCropToBoard(size) {
+    state.crop.x1 = 1;
+    state.crop.y1 = 1;
+    state.crop.x2 = size;
+    state.crop.y2 = size;
+    state.crop.dragHandle = null;
+  }
+
+  function describeCropSelection() {
+    const crop = normalizeCropState();
+    return `Crop spans ${crop.x1},${crop.y1} to ${crop.x2},${crop.y2}.`;
+  }
+
+  function getCropHandles() {
+    const crop = normalizeCropState();
+    return [
+      { id: "nw", point: { x: crop.x1 - 1, y: crop.y1 - 1 } },
+      { id: "ne", point: { x: crop.x2 - 1, y: crop.y1 - 1 } },
+      { id: "sw", point: { x: crop.x1 - 1, y: crop.y2 - 1 } },
+      { id: "se", point: { x: crop.x2 - 1, y: crop.y2 - 1 } },
+    ];
+  }
+
+  function getCropHandleAtEvent(event) {
+    const metrics = getGoMetrics(canvas.width, canvas.height, state.boardSize, get("show-coords").checked);
+    const rect = canvas.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * canvas.width;
+    const y = ((event.clientY - rect.top) / rect.height) * canvas.height;
+    const threshold = Math.max(14, metrics.cell * 0.35);
+    return getCropHandles().find((handle) => {
+      const centerX = metrics.originX + handle.point.x * metrics.cell;
+      const centerY = metrics.originY + handle.point.y * metrics.cell;
+      return Math.hypot(centerX - x, centerY - y) <= threshold;
+    })?.id || null;
+  }
+
+  function updateCropFromHandle(handle, point) {
+    const px = point.x + 1;
+    const py = point.y + 1;
+    const size = state.boardSize;
+    if (handle === "nw") {
+      state.crop.x1 = clamp(px, 1, state.crop.x2);
+      state.crop.y1 = clamp(py, 1, state.crop.y2);
+    } else if (handle === "ne") {
+      state.crop.x2 = clamp(px, state.crop.x1, size);
+      state.crop.y1 = clamp(py, 1, state.crop.y2);
+    } else if (handle === "sw") {
+      state.crop.x1 = clamp(px, 1, state.crop.x2);
+      state.crop.y2 = clamp(py, state.crop.y1, size);
+    } else if (handle === "se") {
+      state.crop.x2 = clamp(px, state.crop.x1, size);
+      state.crop.y2 = clamp(py, state.crop.y1, size);
+    }
+  }
+
+  function nodeToMove(node) {
+    return {
+      color: node.props.B ? "B" : "W",
+      label: node.label,
+    };
   }
 }
 
@@ -574,10 +800,16 @@ function drawGoBoard(ctx, canvas, position, options) {
   if (options.showCoords) {
     ctx.font = `600 ${metrics.coordFontSize}px ${UI_FONT_FAMILY}`;
     ctx.fillStyle = options.theme.line;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
     for (let index = 0; index < size; index += 1) {
       const fileLabel = String.fromCharCode(65 + index + (index >= 8 ? 1 : 0));
-      ctx.fillText(fileLabel, metrics.originX + index * metrics.cell, metrics.originY + metrics.boardSpan + metrics.coordOffset);
-      ctx.fillText(String(index + 1), metrics.originX - metrics.coordOffset, metrics.originY + index * metrics.cell);
+      const x = metrics.originX + index * metrics.cell;
+      const y = metrics.originY + index * metrics.cell;
+      ctx.fillText(fileLabel, x, metrics.originY - metrics.coordOffset);
+      ctx.fillText(fileLabel, x, metrics.originY + metrics.boardSpan + metrics.coordOffset);
+      ctx.fillText(String(index + 1), metrics.originX - metrics.coordOffset, y);
+      ctx.fillText(String(index + 1), metrics.originX + metrics.boardSpan + metrics.coordOffset, y);
     }
   }
 
@@ -591,13 +823,38 @@ function drawGoBoard(ctx, canvas, position, options) {
   if (options.overlayCrop) {
     drawCropOverlay(ctx, metrics, options.overlayCrop, "rgba(165, 47, 28, 0.92)");
   }
+
+  if (options.cropHandles?.length) {
+    options.cropHandles.forEach((handle) => {
+      const centerX = metrics.originX + handle.point.x * metrics.cell;
+      const centerY = metrics.originY + handle.point.y * metrics.cell;
+      ctx.save();
+      ctx.fillStyle = options.cropEditing ? "#a52f1c" : "rgba(165, 47, 28, 0.72)";
+      ctx.strokeStyle = "#fff7ee";
+      ctx.lineWidth = Math.max(2, metrics.cell * 0.06);
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, Math.max(8, metrics.cell * 0.2), 0, Math.PI * 2);
+      ctx.fill();
+      if (options.dragHandle === handle.id) {
+        ctx.stroke();
+      }
+      ctx.restore();
+    });
+  }
 }
 
 function getGoMetrics(width, height, size, showCoords) {
-  const padding = showCoords ? 82 : 58;
+  const padding = showCoords ? 102 : 62;
   const boardSpan = Math.min(width - padding * 2, height - padding * 2);
   const cell = boardSpan / (size - 1);
-  return { originX: (width - boardSpan) / 2, originY: (height - boardSpan) / 2, boardSpan, cell, coordFontSize: Math.max(12, cell * 0.24), coordOffset: 24 };
+  return {
+    originX: (width - boardSpan) / 2,
+    originY: (height - boardSpan) / 2,
+    boardSpan,
+    cell,
+    coordFontSize: Math.max(12, cell * 0.24),
+    coordOffset: Math.max(24, cell * 0.62),
+  };
 }
 
 function getStarPoints(size) {
@@ -609,6 +866,23 @@ function getStarPoints(size) {
   }
   return [[3, 3], [5, 5], [7, 7], [3, 7], [7, 3]];
 }
+
+function enumerateBranchPaths(root) {
+  const leaves = [];
+
+  function visit(node, path) {
+    const nextPath = node.id === "root" ? path : [...path, node];
+    if (!node.children?.length) {
+      leaves.push(nextPath);
+      return;
+    }
+    node.children.forEach((child) => visit(child, nextPath));
+  }
+
+  visit(root, []);
+  return leaves.length ? leaves : [[]];
+}
+
 
 function parseSgf(sgf, fallbackSize) {
   if (!sgf.trim()) {

@@ -27,6 +27,22 @@ const PIECE_GLYPHS = {
   n: "♞",
   p: "♟",
 };
+const PIECE_ASSETS = {
+  K: "assets/chess/cburnett/wK.svg",
+  Q: "assets/chess/cburnett/wQ.svg",
+  R: "assets/chess/cburnett/wR.svg",
+  B: "assets/chess/cburnett/wB.svg",
+  N: "assets/chess/cburnett/wN.svg",
+  P: "assets/chess/cburnett/wP.svg",
+  k: "assets/chess/cburnett/bK.svg",
+  q: "assets/chess/cburnett/bQ.svg",
+  r: "assets/chess/cburnett/bR.svg",
+  b: "assets/chess/cburnett/bB.svg",
+  n: "assets/chess/cburnett/bN.svg",
+  p: "assets/chess/cburnett/bP.svg",
+};
+const PIECE_IMAGES = new Map();
+const PIECE_IMAGE_PROMISES = new Map();
 
 const THEMES = {
   classic: { light: "#f0d9b5", dark: "#b58863", bg: "#f5ebd6", accent: "#6a4e2f" },
@@ -56,6 +72,60 @@ export function mountChess(root) {
           <p data-id="position-summary">Use editor mode to place pieces or parse a PGN branch, then switch to play mode to step through moves.</p>
           <p data-id="selection-summary">The selected branch and move range drive GIF export.</p>
         </div>
+        <section class="card board-subpanel go-board-subpanel">
+          <div class="go-board-subpanel-grid">
+            <section class="go-board-subsection">
+              <div class="go-subsection-header">
+                <h2>Branch & Range</h2>
+                <span class="status-pill" data-id="branch-subpanel-summary">Manual Line</span>
+              </div>
+              <label class="field-label">
+                Branch
+                <select data-id="branch-select"></select>
+              </label>
+              <label class="field-label">
+                Preview Ply
+                <input data-id="preview-slider" type="range" min="0" max="0" value="0" />
+              </label>
+              <div class="inline-fields">
+                <label>Start Ply <input data-id="range-start" type="number" min="0" step="1" value="0" /></label>
+                <label>End Ply <input data-id="range-end" type="number" min="0" step="1" value="0" /></label>
+              </div>
+              <p class="helper-copy" data-id="range-summary">Choose a branch or play moves manually to enable range export.</p>
+            </section>
+            <section class="go-board-subsection">
+              <div class="go-subsection-header">
+                <h2>Board & Crop</h2>
+              </div>
+              <div class="inline-fields">
+                <label>
+                  Theme
+                  <select data-id="theme-select">
+                    <option value="classic">Classic</option>
+                    <option value="slate">Slate</option>
+                  </select>
+                </label>
+                <label>
+                  Frame Delay (ms)
+                  <input data-id="delay-input" type="number" min="100" step="50" value="650" />
+                </label>
+              </div>
+              <div class="toggle-list go-board-toggles">
+                <label class="toggle-option"><input data-id="crop-toggle" type="checkbox" /> <span>Use Crop Region</span></label>
+                <label class="toggle-option"><input data-id="show-coords" type="checkbox" /> <span>Show Coordinates</span></label>
+                <label class="toggle-option"><input data-id="show-turn" type="checkbox" /> <span>Show Turn Indicator</span></label>
+              </div>
+              <div class="inline-fields">
+                <label>From File <input data-id="crop-file-start" type="number" min="1" max="8" value="1" /></label>
+                <label>To File <input data-id="crop-file-end" type="number" min="1" max="8" value="8" /></label>
+              </div>
+              <div class="inline-fields">
+                <label>From Rank <input data-id="crop-rank-start" type="number" min="1" max="8" value="8" /></label>
+                <label>To Rank <input data-id="crop-rank-end" type="number" min="1" max="8" value="1" /></label>
+              </div>
+            </section>
+          </div>
+        </section>
       </section>
       <aside class="control-panel">
         <section class="card">
@@ -74,53 +144,12 @@ export function mountChess(root) {
           <p class="helper-copy">Variations are preserved. Parsing a PGN replaces the current manual branch.</p>
         </section>
         <section class="card">
-          <h2>Branch & Range</h2>
-          <label class="field-label">
-            Branch
-            <select data-id="branch-select"></select>
-          </label>
-          <label class="field-label">
-            Preview Ply
-            <input data-id="preview-slider" type="range" min="0" max="0" value="0" />
-          </label>
-          <div class="inline-fields">
-            <label>Start Ply <input data-id="range-start" type="number" min="0" step="1" value="0" /></label>
-            <label>End Ply <input data-id="range-end" type="number" min="0" step="1" value="0" /></label>
-          </div>
-          <p class="helper-copy" data-id="range-summary">Choose a branch or play moves manually to enable range export.</p>
+          <h2>Playback</h2>
+          <p class="helper-copy">Use the board subpanel below the chessboard to switch branches and control the preview/export range.</p>
           <label class="field-label">
             Move List
             <textarea data-id="move-list" rows="10" readonly></textarea>
           </label>
-        </section>
-        <section class="card">
-          <h2>Board & Crop</h2>
-          <div class="inline-fields">
-            <label>
-              Theme
-              <select data-id="theme-select">
-                <option value="classic">Classic</option>
-                <option value="slate">Slate</option>
-              </select>
-            </label>
-            <label>
-              Frame Delay (ms)
-              <input data-id="delay-input" type="number" min="100" step="50" value="650" />
-            </label>
-          </div>
-          <div class="toggle-list">
-            <label class="toggle-option"><input data-id="crop-toggle" type="checkbox" /> <span>Use Crop Region</span></label>
-            <label class="toggle-option"><input data-id="show-coords" type="checkbox" /> <span>Show Coordinates</span></label>
-            <label class="toggle-option"><input data-id="show-turn" type="checkbox" /> <span>Show Turn Indicator</span></label>
-          </div>
-          <div class="inline-fields">
-            <label>From File <input data-id="crop-file-start" type="number" min="1" max="8" value="1" /></label>
-            <label>To File <input data-id="crop-file-end" type="number" min="1" max="8" value="8" /></label>
-          </div>
-          <div class="inline-fields">
-            <label>From Rank <input data-id="crop-rank-start" type="number" min="1" max="8" value="8" /></label>
-            <label>To Rank <input data-id="crop-rank-end" type="number" min="1" max="8" value="1" /></label>
-          </div>
         </section>
         <section class="card">
           <h2>GIF Export</h2>
@@ -238,6 +267,9 @@ export function mountChess(root) {
 
   seedManualBranchOptions();
   render();
+  void preloadChessPieceImages().then(render).catch((error) => {
+    console.error("Failed to preload chess piece assets.", error);
+  });
 
   return {
     getSummary() {
@@ -266,8 +298,13 @@ export function mountChess(root) {
         button.append(erase);
       } else {
         const badge = document.createElement("span");
-        badge.className = "palette-piece";
-        badge.textContent = PIECE_GLYPHS[piece];
+        badge.className = "palette-piece chess-palette-piece";
+        const image = document.createElement("img");
+        image.className = "chess-piece-asset";
+        image.src = PIECE_ASSETS[piece];
+        image.alt = `${piece === piece.toUpperCase() ? "White" : "Black"} ${pieceName(piece)}`;
+        image.draggable = false;
+        badge.append(image);
         button.append(badge);
       }
       button.addEventListener("click", () => {
@@ -378,6 +415,10 @@ export function mountChess(root) {
       state.source === "manual"
         ? `Manual Line · ${state.manual.history.length} ply`
         : `Branch ${state.branchIndex + 1} · ${state.currentPath.length} ply`;
+    get("branch-subpanel-summary").textContent =
+      state.source === "manual"
+        ? `Manual Line · ${state.manual.history.length} ply`
+        : `Branch ${state.branchIndex + 1} · ${state.currentPath.length} ply`;
     const range = getRange();
     get("range-summary").textContent = `Exporting plies ${range.start} to ${range.end}.`;
     get("move-list").value = formatMoveList(activeHistory.map((item) => item.label || item.move || item.san || formatMove(item)));
@@ -472,6 +513,7 @@ export function mountChess(root) {
   }
 
   async function exportGif() {
+    await preloadChessPieceImages();
     const range = getRange();
     const activeStates = getActiveStates();
     const activeHistory = getActiveHistory();
@@ -566,9 +608,15 @@ function drawChessBoard(ctx, canvas, state, options) {
       if (!piece) {
         continue;
       }
-      const glyph = PIECE_GLYPHS[piece];
       const centerX = metrics.originX + x * metrics.cell + metrics.cell / 2;
       const centerY = metrics.originY + y * metrics.cell + metrics.cell / 2;
+      const image = PIECE_IMAGES.get(piece);
+      if (image?.complete) {
+        const size = metrics.cell * 0.94;
+        ctx.drawImage(image, centerX - size / 2, centerY - size / 2, size, size);
+        continue;
+      }
+      const glyph = PIECE_GLYPHS[piece];
       if (piece === piece.toUpperCase()) {
         ctx.strokeStyle = "rgba(0, 0, 0, 0.34)";
         ctx.lineWidth = 4;
@@ -615,6 +663,49 @@ function getBoardMetrics(width, height, showCoords) {
     coordFontSize: cell * 0.18,
     coordOffset: 26,
   };
+}
+
+function pieceName(piece) {
+  switch (piece.toLowerCase()) {
+    case "k":
+      return "king";
+    case "q":
+      return "queen";
+    case "r":
+      return "rook";
+    case "b":
+      return "bishop";
+    case "n":
+      return "knight";
+    case "p":
+      return "pawn";
+    default:
+      return "piece";
+  }
+}
+
+function loadChessPieceImage(piece) {
+  if (PIECE_IMAGES.has(piece)) {
+    return Promise.resolve(PIECE_IMAGES.get(piece));
+  }
+  if (PIECE_IMAGE_PROMISES.has(piece)) {
+    return PIECE_IMAGE_PROMISES.get(piece);
+  }
+  const promise = new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      PIECE_IMAGES.set(piece, image);
+      resolve(image);
+    };
+    image.onerror = () => reject(new Error(`Failed to load asset for ${piece}.`));
+    image.src = PIECE_ASSETS[piece];
+  });
+  PIECE_IMAGE_PROMISES.set(piece, promise);
+  return promise;
+}
+
+function preloadChessPieceImages() {
+  return Promise.all(Object.keys(PIECE_ASSETS).map((piece) => loadChessPieceImage(piece)));
 }
 
 function parsePgnToTree(pgn) {

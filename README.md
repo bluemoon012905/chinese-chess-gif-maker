@@ -28,9 +28,13 @@ src/
       index.js
     xiangqi/
       index.js
+assets/
+  chess/
+    cburnett/
 ```
 
 Each game now lives in its own folder and only depends on `src/core/shared.js` for generic UI/render helpers.
+Chess uses the vendored Lichess `cburnett` SVG set from `assets/chess/cburnett/`.
 
 ## Run locally
 
