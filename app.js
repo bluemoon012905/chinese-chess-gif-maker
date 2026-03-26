@@ -37,11 +37,11 @@ const state = {
   previewTimer: null,
 };
 
-const LISHU_FONT_FAMILY =
-  '"STLiti", "LiSu", "Baoli SC", "Songti SC", "Bitter", serif';
-const PIECE_FONT_FAMILY = LISHU_FONT_FAMILY;
-const RIVER_FONT_FAMILY = LISHU_FONT_FAMILY;
-const UI_FONT_FAMILY = LISHU_FONT_FAMILY;
+const CHINESE_FONT_FAMILY =
+  '"STLiti", "LiSu", "Baoli SC", "Songti SC", serif';
+const PIECE_FONT_FAMILY = CHINESE_FONT_FAMILY;
+const RIVER_FONT_FAMILY = CHINESE_FONT_FAMILY;
+const UI_FONT_FAMILY = '"Bitter", "Georgia", serif';
 
 const boardElement = document.querySelector("#board");
 const paletteElement = document.querySelector("#palette");
