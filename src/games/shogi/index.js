@@ -11,6 +11,7 @@ import {
 
 const THEMES = {
   character: {
+    id: "character",
     board: "#d4b57b",
     bg: "#efe3c7",
     line: "#5e421e",
@@ -19,6 +20,7 @@ const THEMES = {
     },
   },
   animal: {
+    id: "animal",
     board: "#d9c08a",
     bg: "#f3ead5",
     line: "#5b4a2b",
@@ -60,6 +62,19 @@ const PIECE_ANIMALS = {
   "+N": "Horse+",
   "+L": "Stag+",
   "+P": "Rabbit+",
+};
+
+const ANIMAL_SPRITE_URL = new URL("../../../assets/shogi/cute_animal_icons.png", import.meta.url).href;
+const ANIMAL_SPRITE_SIZE = 16;
+const ANIMAL_SPRITE_INDEX = {
+  K: 2,
+  R: 6,
+  B: 8,
+  G: 10,
+  S: 3,
+  N: 5,
+  L: 7,
+  P: 9,
 };
 
 const STANDARD_SFEN = "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1";
@@ -181,6 +196,9 @@ export function mountShogi(root) {
   const get = (id) => root.querySelector(`[data-id="${id}"]`);
   const canvas = get("board-canvas");
   const ctx = canvas.getContext("2d");
+  const animalSpriteSheet = new Image();
+  animalSpriteSheet.src = ANIMAL_SPRITE_URL;
+  animalSpriteSheet.addEventListener("load", render);
   const state = {
     uiMode: "edit",
     source: "manual",
@@ -310,7 +328,12 @@ export function mountShogi(root) {
       }
       const piece = button.dataset.piece;
       const theme = THEMES[get("theme-select").value] || THEMES.character;
-      badge.textContent = theme.render(piece.toUpperCase());
+      const spriteIndex = theme.id === "animal" ? getAnimalSpriteIndex(piece.toUpperCase()) : null;
+      badge.textContent = spriteIndex === null ? theme.render(piece.toUpperCase()) : "";
+      badge.style.backgroundImage = spriteIndex === null ? "" : `url("${ANIMAL_SPRITE_URL}")`;
+      badge.style.backgroundPosition = spriteIndex === null ? "" : `${-spriteIndex * ANIMAL_SPRITE_SIZE}px 0`;
+      badge.style.backgroundSize = spriteIndex === null ? "" : `${ANIMAL_SPRITE_SIZE * 12}px ${ANIMAL_SPRITE_SIZE}px`;
+      badge.classList.toggle("sprite", spriteIndex !== null);
       badge.classList.toggle("black", piece === piece.toUpperCase());
       badge.classList.toggle("red", piece !== piece.toUpperCase());
     });
@@ -416,6 +439,7 @@ export function mountShogi(root) {
         : "Play mode allows piece movement on the current setup.";
     drawShogiBoard(ctx, canvas, active, {
       theme: THEMES[get("theme-select").value] || THEMES.character,
+      animalSpriteSheet,
       showTurnIndicator: get("show-turn").checked,
       selectedSquare: state.manual.selectedSquare,
       legalMoves: state.manual.legalMoves,
@@ -488,6 +512,7 @@ export function mountShogi(root) {
       const frameCanvas = createBoardCanvas(720, 820);
       drawShogiBoard(frameCanvas.getContext("2d"), frameCanvas, activePositions[moveIndex] || activePositions[0], {
         theme: THEMES[get("theme-select").value] || THEMES.character,
+        animalSpriteSheet,
         showTurnIndicator: get("show-turn").checked,
       });
       frames.push(frameCanvas);
@@ -549,7 +574,12 @@ function drawShogiBoard(ctx, canvas, position, options) {
       }
       const centerX = metrics.originX + x * metrics.cell + metrics.cell / 2;
       const centerY = metrics.originY + y * metrics.cell + metrics.cell / 2;
-      drawShogiPiece(ctx, centerX, centerY, metrics.cell, square.side, options.theme.render(square.kind));
+      drawShogiPiece(ctx, centerX, centerY, metrics.cell, square.side, {
+        label: options.theme.render(square.kind),
+        spriteIndex: options.theme.id === "animal" ? getAnimalSpriteIndex(square.kind) : null,
+        spriteSheet: options.animalSpriteSheet,
+        promoted: square.kind.startsWith("+"),
+      });
     }
   }
 
@@ -563,7 +593,7 @@ function drawShogiBoard(ctx, canvas, position, options) {
   }
 }
 
-function drawShogiPiece(ctx, centerX, centerY, cell, side, label) {
+function drawShogiPiece(ctx, centerX, centerY, cell, side, pieceVisual) {
   ctx.save();
   ctx.translate(centerX, centerY);
   if (side === "w") {
@@ -581,12 +611,41 @@ function drawShogiPiece(ctx, centerX, centerY, cell, side, label) {
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
-  ctx.fillStyle = side === "b" ? "#1d1a16" : "#8b2220";
-  ctx.font = `700 ${cell * 0.36}px ${CHINESE_FONT_FAMILY}`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  const lines = label.length > 3 ? [label.slice(0, 4), label.slice(4)] : [label];
-  lines.forEach((line, index) => ctx.fillText(line, 0, (index - (lines.length - 1) / 2) * cell * 0.25));
+  if (pieceVisual.spriteSheet && pieceVisual.spriteSheet.complete && pieceVisual.spriteIndex !== null) {
+    const spriteSize = cell * 0.62;
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(
+      pieceVisual.spriteSheet,
+      pieceVisual.spriteIndex * ANIMAL_SPRITE_SIZE,
+      0,
+      ANIMAL_SPRITE_SIZE,
+      ANIMAL_SPRITE_SIZE,
+      -spriteSize / 2,
+      -cell * 0.1,
+      spriteSize,
+      spriteSize
+    );
+    ctx.restore();
+    if (pieceVisual.promoted) {
+      ctx.fillStyle = "#b8841b";
+      ctx.beginPath();
+      ctx.arc(cell * 0.16, cell * 0.18, cell * 0.12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#fff7df";
+      ctx.font = `700 ${cell * 0.16}px ${UI_FONT_FAMILY}`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("+", cell * 0.16, cell * 0.18);
+    }
+  } else {
+    ctx.fillStyle = side === "b" ? "#1d1a16" : "#8b2220";
+    ctx.font = `700 ${cell * 0.36}px ${CHINESE_FONT_FAMILY}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const lines = pieceVisual.label.length > 3 ? [pieceVisual.label.slice(0, 4), pieceVisual.label.slice(4)] : [pieceVisual.label];
+    lines.forEach((line, index) => ctx.fillText(line, 0, (index - (lines.length - 1) / 2) * cell * 0.25));
+  }
   ctx.restore();
 }
 
@@ -819,4 +878,8 @@ function coordsToShogiSquare(x, y) {
 function formatHands(hands) {
   const entries = Object.entries(hands);
   return entries.length ? entries.map(([piece, count]) => `${piece}x${count}`).join(" ") : "none";
+}
+
+function getAnimalSpriteIndex(kind) {
+  return ANIMAL_SPRITE_INDEX[kind.replace("+", "")] ?? null;
 }
