@@ -11,6 +11,7 @@
   --ui-font-family: "Bitter", "Georgia", serif;
   --chinese-font-family: "Songti SC", "STSong", "SimSun", "Noto Serif CJK SC", "Source Han Serif SC", serif;
   --xiangqi-piece-font-family: "KaiTi", "Kaiti SC", "STKaiti", "BiauKai", "DFKai-SB", "Kai", "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", serif;
+  --xiangqi-piece-font-family-active: var(--xiangqi-piece-font-family);
   --piece-font-family: var(--chinese-font-family);
   --river-font-family: var(--chinese-font-family);
 }
@@ -266,13 +267,45 @@ button:disabled {
 }
 
 .mode-shell-xiangqi {
-  --piece-font-family: var(--xiangqi-piece-font-family);
-  --river-font-family: var(--xiangqi-piece-font-family);
+  --piece-font-family: var(--xiangqi-piece-font-family-active);
+  --river-font-family: var(--xiangqi-piece-font-family-active);
+}
+
+.mode-shell-xiangqi .board-toolbar label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: auto;
+  min-width: 0;
+  font-size: 0.85rem;
+}
+
+.mode-shell-xiangqi .board-toolbar select {
+  width: auto;
+  min-width: 118px;
+  padding: 6px 10px;
 }
 
 .mode-shell-go .board-panel {
   display: grid;
   gap: 18px;
+}
+
+.mode-shell-go .board-toolbar label,
+.mode-shell-shogi .board-toolbar label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: auto;
+  min-width: 0;
+  font-size: 0.85rem;
+}
+
+.mode-shell-go .board-toolbar select,
+.mode-shell-shogi .board-toolbar select {
+  width: auto;
+  min-width: 108px;
+  padding: 6px 10px;
 }
 
 .mode-shell-shogi .board-panel,
@@ -330,7 +363,7 @@ button:disabled {
 }
 
 .mode-shell-shogi .canvas-board-wrap {
-  padding: 14px;
+  padding: 8px 10px;
   border-radius: 26px;
   background:
     linear-gradient(180deg, rgba(255, 249, 238, 0.8), rgba(228, 207, 165, 0.4)),
@@ -340,18 +373,108 @@ button:disabled {
 }
 
 .mode-shell-shogi .board-toolbar {
-  padding-bottom: 12px;
+  padding-bottom: 8px;
   border-bottom: 1px solid rgba(89, 64, 28, 0.1);
+  align-items: end;
 }
 
 .mode-shell-shogi .board-footer {
-  margin-top: 20px;
-  padding-top: 14px;
+  margin-top: 12px;
+  padding-top: 10px;
   border-top: 1px dashed rgba(89, 64, 28, 0.18);
 }
 
 .mode-shell-shogi .helper-copy {
   color: rgba(35, 24, 21, 0.74);
+}
+
+.mode-shell-shogi {
+  gap: 16px;
+}
+
+.mode-shell-shogi .control-panel {
+  gap: 12px;
+}
+
+.mode-shell-shogi .board-panel {
+  gap: 12px;
+  padding: 16px;
+}
+
+.mode-shell-shogi .card {
+  padding: 14px;
+}
+
+.mode-shell-shogi .board-toolbar {
+  margin-bottom: 10px;
+}
+
+.mode-shell-shogi .toolbar-group,
+.mode-shell-shogi .inline-fields {
+  gap: 8px;
+}
+
+.mode-shell-shogi .card h2,
+.mode-shell-shogi .board-panel h2 {
+  margin: 0 0 8px;
+}
+
+.mode-shell-shogi .shogi-board-subpanel {
+  margin-top: 2px;
+  padding: 14px 16px;
+}
+
+.mode-shell-shogi .shogi-board-subpanel .field-label {
+  margin-bottom: 8px;
+}
+
+.mode-shell-shogi .field-label,
+.mode-shell-shogi label {
+  gap: 4px;
+}
+
+.mode-shell-shogi textarea,
+.mode-shell-shogi input,
+.mode-shell-shogi select {
+  padding: 8px 10px;
+}
+
+.mode-shell-shogi .toggle-list {
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.mode-shell-shogi .gif-preview {
+  margin-top: 6px;
+}
+
+.mode-shell-shogi .palette-option {
+  min-height: 68px;
+  padding: 6px;
+  background: rgba(255, 252, 244, 0.38);
+  border-color: rgba(92, 66, 28, 0.1);
+  box-shadow: none;
+}
+
+.mode-shell-shogi .palette-option.active {
+  background: rgba(76, 107, 88, 0.1);
+  border-color: rgba(76, 107, 88, 0.26);
+  box-shadow: inset 0 0 0 1px rgba(76, 107, 88, 0.08);
+}
+
+.mode-shell-shogi .palette-piece {
+  width: clamp(62px, 4.8vw, 82px);
+  height: clamp(62px, 4.8vw, 82px);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.mode-shell-shogi .erase-piece {
+  border: 2px solid rgba(159, 31, 31, 0.35);
+  border-radius: 14px;
+  background: rgba(255, 252, 244, 0.7);
 }
 
 .go-canvas-board-wrap {
@@ -386,7 +509,7 @@ button:disabled {
 }
 
 .board-xiangqi::after {
-  content: "楚河      漢界";
+  content: attr(data-river-text);
   position: absolute;
   z-index: 0;
   left: 50%;

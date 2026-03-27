@@ -32,6 +32,29 @@ export function mountGo(root) {
             <button data-id="reset-size">Reset Empty Board</button>
           </div>
           <div class="toolbar-group">
+            <label>
+              Board Size
+              <select data-id="board-size">
+                <option value="19">19x19</option>
+                <option value="13">13x13</option>
+                <option value="9">9x9</option>
+              </select>
+            </label>
+            <label>
+              Theme
+              <select data-id="theme-select">
+                <option value="kaya">Kaya</option>
+                <option value="ink">Ink</option>
+                <option value="walnut">Walnut</option>
+                <option value="cedar">Cedar</option>
+                <option value="ashwood">Ashwood</option>
+                <option value="moss">Moss</option>
+                <option value="sage">Sage</option>
+                <option value="monochrome">Black & White</option>
+              </select>
+            </label>
+          </div>
+          <div class="toolbar-group">
             <span class="status-pill" data-id="mode-pill">Editor</span>
             <button data-id="turn-pill" class="status-pill" type="button">Black To Move</button>
             <span class="status-pill" data-id="branch-summary">Manual Board</span>
@@ -88,14 +111,6 @@ export function mountGo(root) {
           </label>
           <div class="inline-fields">
             <label>
-              Board Size
-              <select data-id="board-size">
-                <option value="19">19x19</option>
-                <option value="13">13x13</option>
-                <option value="9">9x9</option>
-              </select>
-            </label>
-            <label>
               Frame Delay (ms)
               <input data-id="delay-input" type="number" min="100" step="50" value="650" />
             </label>
@@ -117,33 +132,16 @@ export function mountGo(root) {
           </label>
         </section>
         <section class="card">
-          <h2>Board & Crop</h2>
+          <h2>GIF Export</h2>
           <div class="inline-fields">
-            <label>
-              Theme
-              <select data-id="theme-select">
-                <option value="kaya">Kaya</option>
-                <option value="ink">Ink</option>
-                <option value="walnut">Walnut</option>
-                <option value="cedar">Cedar</option>
-                <option value="ashwood">Ashwood</option>
-                <option value="moss">Moss</option>
-                <option value="sage">Sage</option>
-                <option value="monochrome">Black & White</option>
-              </select>
-            </label>
             <label>
               Label Moves
               <select data-id="label-mode">
                 <option value="last">Last Move Only</option>
+                <option value="persist">Persistent</option>
                 <option value="none">No Labels</option>
               </select>
             </label>
-          </div>
-        </section>
-        <section class="card">
-          <h2>GIF Export</h2>
-          <div class="inline-fields">
             <label>
               End Delay (ms)
               <input data-id="end-delay-input" type="number" min="0" step="100" value="1200" />
@@ -808,12 +806,14 @@ function drawGoBoard(ctx, canvas, position, options) {
     ctx.beginPath();
     ctx.arc(centerX, centerY, metrics.cell * 0.45, 0, Math.PI * 2);
     ctx.fill();
-    if (options.labelMode === "last" && position.lastMove && position.lastMove.x === x && position.lastMove.y === y) {
+    const shouldLabelLast = options.labelMode === "last" && position.lastMove && position.lastMove.x === x && position.lastMove.y === y;
+    const shouldLabelPersist = options.labelMode === "persist" && Number.isFinite(stone.number);
+    if (shouldLabelLast || shouldLabelPersist) {
       ctx.fillStyle = stone.color === "B" ? "#f0e2a1" : "#a12218";
       ctx.font = `700 ${Math.max(14, metrics.cell * 0.29)}px ${UI_FONT_FAMILY}`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(String(position.moveNumber), centerX, centerY + 1);
+      ctx.fillText(String(shouldLabelPersist ? stone.number : position.moveNumber), centerX, centerY + 1);
     }
   });
 
@@ -1128,7 +1128,7 @@ function applyGoMove(position, point, color) {
   if (position.stones.has(key)) {
     return null;
   }
-  position.stones.set(key, { color });
+  position.stones.set(key, { color, number: position.moveNumber + 1 });
   captureOpponents(position, point.x, point.y, color);
   if (!hasLiberty(position, point.x, point.y, color, new Set())) {
     position.stones.delete(key);

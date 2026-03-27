@@ -1,4 +1,5 @@
 import {
+  CHINESE_FONT_FAMILY,
   UI_FONT_FAMILY,
   XIANGQI_PIECE_FONT_FAMILY,
   clamp,
@@ -12,23 +13,108 @@ import {
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h", "i"];
 const RANKS = ["9", "8", "7", "6", "5", "4", "3", "2", "1", "0"];
 const START_FEN = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w";
+const XIANGQI_SANS_FONT_FAMILY =
+  '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Source Han Sans SC", sans-serif';
+const XIANGQI_FANGSONG_FONT_FAMILY =
+  '"FangSong", "STFangsong", "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", serif';
+const XIANGQI_LISHU_FONT_FAMILY =
+  '"LiSu", "STLiti", "Baoli SC", "Songti SC", "STSong", "SimSun", "Noto Serif SC", serif';
 const PIECE_META = {
-  K: { side: "red", glyph: "帥", label: "Red General" },
-  A: { side: "red", glyph: "仕", label: "Red Advisor" },
-  B: { side: "red", glyph: "相", label: "Red Elephant" },
-  N: { side: "red", glyph: "馬", label: "Red Horse" },
-  R: { side: "red", glyph: "車", label: "Red Chariot" },
-  C: { side: "red", glyph: "炮", label: "Red Cannon" },
-  P: { side: "red", glyph: "兵", label: "Red Soldier" },
-  k: { side: "black", glyph: "將", label: "Black General" },
-  a: { side: "black", glyph: "士", label: "Black Advisor" },
-  b: { side: "black", glyph: "象", label: "Black Elephant" },
-  n: { side: "black", glyph: "馬", label: "Black Horse" },
-  r: { side: "black", glyph: "車", label: "Black Chariot" },
-  c: { side: "black", glyph: "砲", label: "Black Cannon" },
-  p: { side: "black", glyph: "卒", label: "Black Soldier" },
+  K: { side: "red", label: "Red General" },
+  A: { side: "red", label: "Red Advisor" },
+  B: { side: "red", label: "Red Elephant" },
+  N: { side: "red", label: "Red Horse" },
+  R: { side: "red", label: "Red Chariot" },
+  C: { side: "red", label: "Red Cannon" },
+  P: { side: "red", label: "Red Soldier" },
+  k: { side: "black", label: "Black General" },
+  a: { side: "black", label: "Black Advisor" },
+  b: { side: "black", label: "Black Elephant" },
+  n: { side: "black", label: "Black Horse" },
+  r: { side: "black", label: "Black Chariot" },
+  c: { side: "black", label: "Black Cannon" },
+  p: { side: "black", label: "Black Soldier" },
 };
 const PALETTE_ORDER = ["K", "A", "B", "N", "R", "C", "P", "k", "a", "b", "n", "r", "c", "p", "."];
+const BASE_GLYPHS = {
+  K: "帥",
+  A: "仕",
+  B: "相",
+  N: "馬",
+  R: "車",
+  C: "炮",
+  P: "兵",
+  k: "將",
+  a: "士",
+  b: "象",
+  n: "馬",
+  r: "車",
+  c: "砲",
+  p: "卒",
+};
+const SIMPLIFIED_GLYPHS = {
+  K: "帅",
+  A: "仕",
+  B: "相",
+  N: "马",
+  R: "车",
+  C: "炮",
+  P: "兵",
+  k: "将",
+  a: "士",
+  b: "象",
+  n: "马",
+  r: "车",
+  c: "炮",
+  p: "卒",
+};
+const XIANGQI_THEMES = {
+  standard: {
+    label: "Kaishu",
+    fontFamily: XIANGQI_PIECE_FONT_FAMILY,
+    glyphs: BASE_GLYPHS,
+    riverLeft: "楚河",
+    riverRight: "漢界",
+  },
+  simplified: {
+    label: "Simplified",
+    fontFamily: CHINESE_FONT_FAMILY,
+    glyphs: SIMPLIFIED_GLYPHS,
+    riverLeft: "楚河",
+    riverRight: "汉界",
+  },
+  traditional: {
+    label: "Traditional",
+    fontFamily: CHINESE_FONT_FAMILY,
+    glyphs: {
+      ...BASE_GLYPHS,
+      C: "炮",
+    },
+    riverLeft: "楚河",
+    riverRight: "漢界",
+  },
+  fangsong: {
+    label: "FangSong",
+    fontFamily: XIANGQI_FANGSONG_FONT_FAMILY,
+    glyphs: BASE_GLYPHS,
+    riverLeft: "楚河",
+    riverRight: "漢界",
+  },
+  lishu: {
+    label: "LiShu",
+    fontFamily: XIANGQI_LISHU_FONT_FAMILY,
+    glyphs: BASE_GLYPHS,
+    riverLeft: "楚河",
+    riverRight: "漢界",
+  },
+  heiti: {
+    label: "Hei",
+    fontFamily: XIANGQI_SANS_FONT_FAMILY,
+    glyphs: SIMPLIFIED_GLYPHS,
+    riverLeft: "楚河",
+    riverRight: "汉界",
+  },
+};
 
 export function mountXiangqi(root) {
   root.innerHTML = `
@@ -41,6 +127,17 @@ export function mountXiangqi(root) {
             <button data-id="reset-start">Reset Start Position</button>
           </div>
           <div class="toolbar-group">
+            <label class="toolbar-select">
+              Theme
+              <select data-id="theme-select">
+                <option value="standard">Kaishu</option>
+                <option value="simplified">Simplified</option>
+                <option value="traditional">Traditional</option>
+                <option value="fangsong">FangSong</option>
+                <option value="lishu">LiShu</option>
+                <option value="heiti">Hei</option>
+              </select>
+            </label>
             <span class="status-pill" data-id="mode-pill">Editor</span>
             <button data-id="turn-pill" class="status-pill turn-red" type="button">Red To Move</button>
           </div>
@@ -160,6 +257,7 @@ export function mountXiangqi(root) {
   const sideSelect = get("side-select");
   const delayInput = get("delay-input");
   const endDelayInput = get("end-delay-input");
+  const themeSelect = get("theme-select");
   const showCoordsToggle = get("show-coords");
   const showTurnToggle = get("show-turn");
   const gifStatus = get("gif-status");
@@ -188,6 +286,7 @@ export function mountXiangqi(root) {
     selectedSquare: null,
     legalTargets: [],
     paletteSelection: ".",
+    theme: "lishu",
     previewTimer: null,
   };
 
@@ -241,7 +340,7 @@ export function mountXiangqi(root) {
       } else {
         const badge = document.createElement("span");
         badge.className = `palette-piece ${PIECE_META[piece].side}`;
-        badge.textContent = PIECE_META[piece].glyph;
+        badge.textContent = getPieceGlyph(piece);
         button.append(badge);
       }
       button.addEventListener("click", () => {
@@ -282,6 +381,11 @@ export function mountXiangqi(root) {
       state.turn = state.turn === "w" ? "b" : "w";
       state.baseTurn = state.turn;
       clearSelection();
+      render();
+    });
+
+    themeSelect.addEventListener("change", () => {
+      state.theme = XIANGQI_THEMES[themeSelect.value] ? themeSelect.value : "standard";
       render();
     });
 
@@ -403,6 +507,12 @@ export function mountXiangqi(root) {
   function renderPalette() {
     paletteElement.querySelectorAll(".palette-option").forEach((button) => {
       button.classList.toggle("active", button.dataset.piece === state.paletteSelection);
+      if (button.dataset.piece && button.dataset.piece !== ".") {
+        const badge = button.querySelector(".palette-piece");
+        if (badge) {
+          badge.textContent = getPieceGlyph(button.dataset.piece);
+        }
+      }
     });
   }
 
@@ -420,7 +530,7 @@ export function mountXiangqi(root) {
       if (piece) {
         const token = document.createElement("span");
         token.className = `piece ${PIECE_META[piece].side}`;
-        token.textContent = PIECE_META[piece].glyph;
+        token.textContent = getPieceGlyph(piece);
         token.title = PIECE_META[piece].label;
         square.append(token);
       }
@@ -455,6 +565,9 @@ export function mountXiangqi(root) {
     fenInput.value = boardToFen(state.baseBoard);
     sideSelect.value = state.baseTurn;
     movesInput.value = state.history.map((move) => move.notation).join(" ");
+    themeSelect.value = state.theme;
+    root.style.setProperty("--xiangqi-piece-font-family-active", getActiveTheme().fontFamily);
+    boardElement.dataset.riverText = `${getActiveTheme().riverLeft}      ${getActiveTheme().riverRight}`;
   }
 
   function normalizeExportRange() {
@@ -1005,6 +1118,7 @@ export function mountXiangqi(root) {
     canvas.height = 800;
     const ctx = canvas.getContext("2d");
     const metrics = getBoardRenderMetrics(canvas.width, canvas.height);
+    const theme = getActiveTheme();
 
     ctx.fillStyle = "#f3e2ba";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1050,11 +1164,11 @@ export function mountXiangqi(root) {
     ctx.lineTo(metrics.originX + 3 * metrics.cell, metrics.originY + 9 * metrics.cell);
     ctx.stroke();
 
-    ctx.font = `700 ${metrics.riverFontSize}px ${XIANGQI_PIECE_FONT_FAMILY}`;
+    ctx.font = `700 ${metrics.riverFontSize}px ${theme.fontFamily}`;
     ctx.fillStyle = "rgba(35, 24, 21, 0.65)";
     ctx.textAlign = "center";
-    ctx.fillText("楚河", canvas.width / 2 - metrics.riverGap, metrics.originY + 4.68 * metrics.cell);
-    ctx.fillText("漢界", canvas.width / 2 + metrics.riverGap, metrics.originY + 4.68 * metrics.cell);
+    ctx.fillText(theme.riverLeft, canvas.width / 2 - metrics.riverGap, metrics.originY + 4.68 * metrics.cell);
+    ctx.fillText(theme.riverRight, canvas.width / 2 + metrics.riverGap, metrics.originY + 4.68 * metrics.cell);
 
     if (options.showCoords) {
       ctx.font = `600 ${metrics.coordFontSize}px ${UI_FONT_FAMILY}`;
@@ -1148,6 +1262,7 @@ export function mountXiangqi(root) {
   }
 
   function drawPiece(ctx, x, y, metrics, piece) {
+    const theme = getActiveTheme();
     const radial = ctx.createRadialGradient(
       x - metrics.pieceGradientInnerX,
       y - metrics.pieceGradientInnerY,
@@ -1167,9 +1282,17 @@ export function mountXiangqi(root) {
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = PIECE_META[piece].side === "red" ? "#9f1f1f" : "#23272f";
-    ctx.font = `700 ${metrics.pieceFontSize}px ${XIANGQI_PIECE_FONT_FAMILY}`;
+    ctx.font = `700 ${metrics.pieceFontSize}px ${theme.fontFamily}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(PIECE_META[piece].glyph, x, y + metrics.cell * 0.014);
+    ctx.fillText(getPieceGlyph(piece), x, y + metrics.cell * 0.014);
+  }
+
+  function getActiveTheme() {
+    return XIANGQI_THEMES[state.theme] || XIANGQI_THEMES.standard;
+  }
+
+  function getPieceGlyph(piece) {
+    return getActiveTheme().glyphs[piece] || "";
   }
 }

@@ -67,12 +67,11 @@ export function renderGif({
           return;
         }
         try {
-          await navigator.clipboard.write([
-            new window.ClipboardItem({
-              "image/gif": blob,
-            }),
-          ]);
-          statusElement.textContent = "GIF copied to the clipboard.";
+          const result = await copyGifToClipboard(blob, frames[0]);
+          statusElement.textContent =
+            result === "gif"
+              ? "GIF copied to the clipboard."
+              : "Clipboard does not support GIF here. Copied a PNG preview frame instead.";
         } catch (error) {
           statusElement.textContent = "Clipboard copy failed. Download the GIF instead.";
         }
@@ -83,6 +82,43 @@ export function renderGif({
     gif.on("abort", () => reject(new Error("GIF rendering aborted.")));
     gif.on("error", (error) => reject(error instanceof Error ? error : new Error(String(error))));
     gif.render();
+  });
+}
+
+async function copyGifToClipboard(blob, fallbackFrame) {
+  const gifBlob = blob.type === "image/gif" ? blob : new Blob([blob], { type: "image/gif" });
+  const supports = typeof window.ClipboardItem.supports === "function" ? window.ClipboardItem.supports.bind(window.ClipboardItem) : null;
+  if (!supports || supports("image/gif")) {
+    try {
+      await navigator.clipboard.write([
+        new window.ClipboardItem({
+          "image/gif": Promise.resolve(gifBlob),
+        }),
+      ]);
+      return "gif";
+    } catch (error) {
+      // Fall through to PNG fallback for browsers/apps that reject GIF clipboard payloads.
+    }
+  }
+
+  const pngBlob = await canvasToBlob(fallbackFrame, "image/png");
+  await navigator.clipboard.write([
+    new window.ClipboardItem({
+      "image/png": Promise.resolve(pngBlob),
+    }),
+  ]);
+  return "png";
+}
+
+function canvasToBlob(canvas, type) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+        return;
+      }
+      reject(new Error(`Failed to create ${type} blob.`));
+    }, type);
   });
 }
 

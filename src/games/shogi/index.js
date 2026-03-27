@@ -2,6 +2,7 @@ import {
   CHINESE_FONT_FAMILY,
   UI_FONT_FAMILY,
   clamp,
+  cropCanvas,
   createBoardCanvas,
   formatMoveList,
   normalizeRange,
@@ -30,43 +31,16 @@ const LISHOGI_BASE_URL = new URL("../../../assets/lishogi-standard/", import.met
 const LISHOGI_PACKS = [
   { id: "1kanji_3d", label: "1Kanji 3D", ext: "svg" },
   { id: "2kanji_3d", label: "2Kanji 3D", ext: "svg" },
-  { id: "alfaerie", label: "Alfaerie", ext: "svg" },
-  { id: "better_8_bit", label: "Better 8-Bit", ext: "png" },
-  { id: "characters", label: "Characters", ext: "png" },
-  { id: "dewitt_1kanji", label: "DeWitt 1Kanji", ext: "svg" },
-  { id: "dewitt_2kanji", label: "DeWitt 2Kanji", ext: "svg" },
-  { id: "dewitt_czech", label: "DeWitt Czech", ext: "svg" },
   { id: "dobutsu", label: "Dobutsu", ext: "svg" },
-  { id: "engraved_cz", label: "Engraved CZ", ext: "svg" },
-  { id: "engraved_cz_bnw", label: "Engraved CZ BnW", ext: "svg" },
-  { id: "firi", label: "Firi", ext: "svg" },
   { id: "glass", label: "Glass", ext: "png" },
-  { id: "greenwade", label: "Greenwade", ext: "svg" },
   { id: "hitomoji", label: "Hitomoji", ext: "svg" },
-  { id: "international", label: "International", ext: "svg" },
-  { id: "intl_colored_2d", label: "Intl Colored 2D", ext: "svg" },
-  { id: "intl_colored_3d", label: "Intl Colored 3D", ext: "svg" },
-  { id: "intl_monochrome_2d", label: "Intl Monochrome 2D", ext: "svg" },
-  { id: "intl_portella", label: "Intl Portella", ext: "png" },
-  { id: "intl_shadowed", label: "Intl Shadowed", ext: "svg" },
-  { id: "intl_wooden_3d", label: "Intl Wooden 3D", ext: "svg" },
-  { id: "joyful", label: "Joyful", ext: "png" },
   { id: "kanji_brown", label: "Kanji Brown", ext: "svg" },
-  { id: "kanji_guide_shadowed", label: "Kanji Guide Shadowed", ext: "svg" },
   { id: "kanji_light", label: "Kanji Light", ext: "svg" },
-  { id: "kanji_red_wood", label: "Kanji Red Wood", ext: "svg" },
-  { id: "logy_games", label: "Logy Games", ext: "svg" },
-  { id: "mnemonic", label: "Mnemonic", ext: "svg" },
   { id: "orangain", label: "Orangain", ext: "svg" },
-  { id: "pixel", label: "Pixel", ext: "png" },
-  { id: "portella", label: "Portella", ext: "png" },
-  { id: "portella_2kanji", label: "Portella 2Kanji", ext: "png" },
-  { id: "ryoko_1kanji", label: "Ryoko 1Kanji", ext: "svg" },
   { id: "shogi_bnw", label: "Shogi BnW", ext: "svg" },
   { id: "shogi_cz", label: "Shogi CZ", ext: "svg" },
   { id: "shogi_fcz", label: "Shogi FCZ", ext: "svg" },
   { id: "simple_kanji", label: "Simple Kanji", ext: "svg" },
-  { id: "vald_opt", label: "Vald Opt", ext: "svg" },
   { id: "valdivia", label: "Valdivia", ext: "svg" },
   { id: "western", label: "Western", ext: "svg" },
 ];
@@ -91,11 +65,12 @@ const LISHOGI_PIECE_CODES = {
 const STANDARD_SFEN = "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1";
 const DORO_SFEN = "sgkgs/5/1ppp1/1PPP1/5/SGKGS b - 1";
 const PALETTE = ["K", "R", "B", "G", "S", "N", "L", "P", "k", "r", "b", "g", "s", "n", "l", "p", "."];
+const HAND_ORDER = ["R", "B", "G", "S", "N", "L", "P"];
 
 const VARIANTS = {
-  standard: { label: "Standard", sfen: STANDARD_SFEN, cols: 9, rows: 9, promotionZoneDepth: 3, hands: { b: {}, w: {} } },
-  doro: { label: "Doro Doro Shogi", sfen: DORO_SFEN, cols: 5, rows: 6, promotionZoneDepth: 2, hands: { b: {}, w: {} } },
-  doroplus: { label: "Doro Doro Shogi+", sfen: DORO_SFEN, cols: 5, rows: 6, promotionZoneDepth: 2, hands: { b: { N: 1, L: 1 }, w: { N: 1, L: 1 } } },
+  standard: { label: "Standard", sfen: STANDARD_SFEN, cols: 9, rows: 9, promotionZoneDepth: 3, hands: { b: {}, w: {} }, handKinds: HAND_ORDER },
+  doro: { label: "Doro Doro Shogi", sfen: DORO_SFEN, cols: 5, rows: 6, promotionZoneDepth: 2, hands: { b: {}, w: {} }, handKinds: ["G", "S", "P"] },
+  doroplus: { label: "Doro Doro Shogi+", sfen: DORO_SFEN, cols: 5, rows: 6, promotionZoneDepth: 2, hands: { b: { N: 1, L: 1 }, w: { N: 1, L: 1 } }, handKinds: ["G", "S", "N", "L", "P"] },
 };
 
 export function mountShogi(root) {
@@ -109,27 +84,6 @@ export function mountShogi(root) {
             <button data-id="reset-variant">Reset Variant</button>
           </div>
           <div class="toolbar-group">
-            <span class="status-pill" data-id="mode-pill">Editor</span>
-            <button data-id="turn-pill" class="status-pill" type="button">Black To Move</button>
-            <span class="status-pill" data-id="variant-summary">Manual Board</span>
-          </div>
-        </div>
-        <div class="canvas-board-wrap">
-          <canvas data-id="board-canvas" class="board-canvas" width="720" height="820"></canvas>
-        </div>
-        <div class="board-footer">
-          <p data-id="position-summary">Editor mode places pieces directly. Play mode supports move-by-move board play on the current setup.</p>
-          <p data-id="selection-summary">Variant presets and theme choices carry through to GIF export.</p>
-        </div>
-      </section>
-      <aside class="control-panel">
-        <section class="card">
-          <h2>Editor Palette</h2>
-          <div data-id="palette" class="palette"></div>
-        </section>
-        <section class="card">
-          <h2>Variant & Theme</h2>
-          <div class="inline-fields">
             <label>
               Variant
               <select data-id="variant-select">
@@ -144,10 +98,44 @@ export function mountShogi(root) {
               </select>
             </label>
           </div>
-          <p class="helper-copy">Doro Doro Shogi+ starts with a knight and lance in hand for each side in this UI model.</p>
+          <div class="toolbar-group">
+            <span class="status-pill" data-id="mode-pill">Editor</span>
+            <button data-id="turn-pill" class="status-pill" type="button">Black To Move</button>
+            <span class="status-pill" data-id="variant-summary">Manual Board</span>
+          </div>
+        </div>
+        <div class="canvas-board-wrap">
+          <canvas data-id="board-canvas" class="board-canvas" width="1080" height="990"></canvas>
+        </div>
+        <div class="board-footer">
+          <p data-id="position-summary">Editor mode places pieces directly. Play mode supports move-by-move board play on the current setup.</p>
+          <p data-id="selection-summary">Variant presets and theme choices carry through to GIF export.</p>
+        </div>
+        <section class="card board-subpanel shogi-board-subpanel">
+          <h2>Range</h2>
+          <label class="field-label">
+            Preview Move
+            <input data-id="preview-slider" type="range" min="0" max="0" value="0" />
+          </label>
+          <div class="inline-fields">
+            <label>Start Move <input data-id="range-start" type="number" min="0" step="1" value="0" /></label>
+            <label>End Move <input data-id="range-end" type="number" min="0" step="1" value="0" /></label>
+          </div>
+          <p class="helper-copy" data-id="range-summary">Load or play a line to enable range export.</p>
+          <label class="field-label">
+            Move List
+            <textarea data-id="move-list" rows="8" readonly></textarea>
+          </label>
+        </section>
+      </section>
+      <aside class="control-panel">
+        <section class="card">
+          <h2>Editor Palette</h2>
+          <div data-id="palette" class="palette"></div>
         </section>
         <section class="card">
           <h2>Import</h2>
+          <p class="helper-copy">Doro Doro Shogi+ starts with a knight and lance in hand for each side in this UI model.</p>
           <label class="field-label">
             SFEN Position
             <textarea data-id="sfen-input" rows="3" placeholder="${STANDARD_SFEN}"></textarea>
@@ -169,22 +157,10 @@ export function mountShogi(root) {
           <div class="toolbar-group">
             <button data-id="load-game" class="primary-button">Load Shogi Game</button>
           </div>
-        </section>
-        <section class="card">
-          <h2>Range</h2>
-          <label class="field-label">
-            Preview Move
-            <input data-id="preview-slider" type="range" min="0" max="0" value="0" />
-          </label>
-          <div class="inline-fields">
-            <label>Start Move <input data-id="range-start" type="number" min="0" step="1" value="0" /></label>
-            <label>End Move <input data-id="range-end" type="number" min="0" step="1" value="0" /></label>
+          <div class="toolbar-group wrap">
+            <button data-id="fill-north-hand">Add Rest To North Hand</button>
+            <button data-id="fill-south-hand">Add Rest To South Hand</button>
           </div>
-          <p class="helper-copy" data-id="range-summary">Load or play a line to enable range export.</p>
-          <label class="field-label">
-            Move List
-            <textarea data-id="move-list" rows="10" readonly></textarea>
-          </label>
         </section>
         <section class="card">
           <h2>GIF Export</h2>
@@ -269,6 +245,8 @@ export function mountShogi(root) {
   });
   get("skin-select").addEventListener("change", render);
   get("load-game").addEventListener("click", loadGame);
+  get("fill-north-hand").addEventListener("click", () => fillHandForSide("w"));
+  get("fill-south-hand").addEventListener("click", () => fillHandForSide("b"));
   get("preview-slider").addEventListener("input", () => {
     state.previewMove = clamp(Number(get("preview-slider").value) || 0, 0, getActiveMoves().length);
     clearSelection();
@@ -302,6 +280,7 @@ export function mountShogi(root) {
       promotionZoneDepth: variant.promotionZoneDepth,
       turn: "b",
       hands: { b: {}, w: {} },
+      handKinds: [...variant.handKinds],
       moveNumber: 1,
     };
   }
@@ -374,6 +353,7 @@ export function mountShogi(root) {
       promotionZoneDepth: position.promotionZoneDepth,
       turn: position.turn,
       hands: { b: { ...position.hands.b }, w: { ...position.hands.w } },
+      handKinds: [...(position.handKinds || HAND_ORDER)],
       moveNumber: position.moveNumber,
     };
   }
@@ -411,7 +391,7 @@ export function mountShogi(root) {
     try {
       const variant = get("variant-select").value;
       const start = get("sfen-input").value.trim() ? parseSfen(get("sfen-input").value.trim()) : loadVariantPosition(variant);
-      applyVariantHands(start, variant);
+      applyVariantGeometry(start, variant);
       const moveTokens = get("moves-input").value.trim().split(/[\s,]+/).filter(Boolean);
       const positions = [clonePosition(start)];
       moveTokens.forEach((token) => {
@@ -427,6 +407,25 @@ export function mountShogi(root) {
     } catch (error) {
       window.alert(error.message);
     }
+  }
+
+  function fillHandForSide(side) {
+    const variant = get("variant-select").value;
+    const target = clonePosition(getActiveBaseState());
+    const fullCounts = countSideInventory(loadVariantPosition(variant), side);
+    const currentCounts = countSideInventory(target, side);
+    HAND_ORDER.forEach((kind) => {
+      const missing = Math.max(0, (fullCounts[kind] || 0) - (currentCounts[kind] || 0));
+      if (missing > 0) {
+        target.hands[side][kind] = (target.hands[side][kind] || 0) + missing;
+      }
+    });
+    state.source = "manual";
+    state.manual.baseState = target;
+    state.manual.moves = [];
+    state.previewMove = 0;
+    rebuildManualPositions();
+    render();
   }
 
   function normalizeExportInputs() {
@@ -465,8 +464,9 @@ export function mountShogi(root) {
     get("turn-pill").textContent = active.turn === "b" ? "Black To Move" : "White To Move";
     get("turn-pill").classList.toggle("turn-black", active.turn === "b");
     get("turn-pill").classList.toggle("turn-red", active.turn === "w");
+    get("sfen-input").value = positionToSfen(getActiveBaseState());
     get("variant-summary").textContent =
-      state.source === "manual"
+    state.source === "manual"
         ? `Manual Board · ${activeMoves.length} move${activeMoves.length === 1 ? "" : "s"}`
         : `${VARIANTS[get("variant-select").value].label} · ${activeMoves.length} move${activeMoves.length === 1 ? "" : "s"}`;
     const range = getRange();
@@ -474,7 +474,7 @@ export function mountShogi(root) {
     get("move-list").value = formatMoveList(activeMoves.map((move) => move.label || move.usi));
     get("selection-summary").textContent =
       state.uiMode === "edit"
-        ? "Editor mode places pieces directly on the board."
+        ? "Editor mode places pieces directly on the board. Click the same selected piece to promote it, click a different piece to replace it, or use erase to remove it."
         : "Play mode allows piece movement on the current setup.";
     drawShogiBoard(ctx, canvas, active, {
       theme: getShogiTheme(),
@@ -487,20 +487,64 @@ export function mountShogi(root) {
   }
 
   function handleCanvasClick(event) {
-    const square = canvasPointToSquare(canvas, event, state.manual.baseState);
-    if (!square) {
+    const editablePosition =
+      state.uiMode === "edit"
+        ? clonePosition(getActivePositions()[state.previewMove] || getActiveBaseState())
+        : state.manual.baseState;
+    const square = canvasPointToSquare(canvas, event, editablePosition);
+    const handSlot = square ? null : canvasPointToHandSlot(canvas, event, editablePosition);
+    if (!square && !handSlot) {
       return;
     }
-    state.source = "manual";
+    if (!square) {
+      if (state.uiMode !== "edit" || !handSlot) {
+        return;
+      }
+      const next = editablePosition;
+      if (state.manual.paletteSelection === ".") {
+        if (next.hands[handSlot.side][handSlot.kind]) {
+          next.hands[handSlot.side][handSlot.kind] -= 1;
+          if (next.hands[handSlot.side][handSlot.kind] <= 0) {
+            delete next.hands[handSlot.side][handSlot.kind];
+          }
+        }
+      } else {
+        next.hands[handSlot.side][handSlot.kind] = (next.hands[handSlot.side][handSlot.kind] || 0) + 1;
+      }
+      state.source = "manual";
+      state.manual.baseState = next;
+      state.manual.moves = [];
+      state.previewMove = 0;
+      rebuildManualPositions();
+      render();
+      return;
+    }
     if (state.uiMode === "edit") {
-      const next = clonePosition(state.manual.baseState);
-      next.board[square.y][square.x] =
-        state.manual.paletteSelection === "."
-          ? null
-          : {
-              side: state.manual.paletteSelection === state.manual.paletteSelection.toUpperCase() ? "b" : "w",
-              kind: state.manual.paletteSelection.toUpperCase(),
-            };
+      const next = editablePosition;
+      const currentPiece = next.board[square.y][square.x];
+      const selectedPiece = state.manual.paletteSelection;
+      if (selectedPiece === ".") {
+        next.board[square.y][square.x] = null;
+      } else {
+        const selectedSide = selectedPiece === selectedPiece.toUpperCase() ? "b" : "w";
+        const selectedKind = selectedPiece.toUpperCase();
+        const matchesSelected =
+          currentPiece &&
+          currentPiece.side === selectedSide &&
+          currentPiece.kind.replace("+", "") === selectedKind;
+        if (matchesSelected && canPromote(currentPiece.kind) && !currentPiece.kind.startsWith("+")) {
+          next.board[square.y][square.x] = {
+            ...currentPiece,
+            kind: `+${currentPiece.kind}`,
+          };
+        } else {
+          next.board[square.y][square.x] = {
+            side: selectedSide,
+            kind: selectedKind,
+          };
+        }
+      }
+      state.source = "manual";
       state.manual.baseState = next;
       state.manual.moves = [];
       state.previewMove = 0;
@@ -549,14 +593,17 @@ export function mountShogi(root) {
     const frames = [];
     const activePositions = getActivePositions();
     for (let moveIndex = range.start; moveIndex <= range.end; moveIndex += 1) {
-      const frameCanvas = createBoardCanvas(720, 820);
-      drawShogiBoard(frameCanvas.getContext("2d"), frameCanvas, activePositions[moveIndex] || activePositions[0], {
+      const frameCanvas = createBoardCanvas(720, 660);
+      const position = activePositions[moveIndex] || activePositions[0];
+      drawShogiBoard(frameCanvas.getContext("2d"), frameCanvas, position, {
         theme: getShogiTheme(),
         lishogiPack: getSelectedLishogiPack(),
         getLishogiImage,
         showTurnIndicator: get("show-turn").checked,
       });
-      frames.push(frameCanvas);
+      const cropRect = getShogiContentRect(frameCanvas, position);
+      const outputSize = getShogiOutputSize(cropRect, 720);
+      frames.push(cropCanvas(frameCanvas, cropRect, outputSize.width, outputSize.height));
     }
     try {
       await renderGif({
@@ -663,85 +710,201 @@ function drawShogiBoard(ctx, canvas, position, options) {
     }
   }
 
-  ctx.font = `600 ${metrics.handFontSize}px ${UI_FONT_FAMILY}`;
-  ctx.fillStyle = options.theme.line;
-  ctx.textAlign = "left";
-  ctx.fillText(`Black hand: ${formatHands(position.hands.b)}`, metrics.originX, metrics.originY + metrics.boardHeight + 38);
-  ctx.fillText(`White hand: ${formatHands(position.hands.w)}`, metrics.originX, metrics.originY - 26);
+  drawHandColumn(ctx, metrics, position.hands.w, "w", {
+    theme: options.theme,
+    lishogiPack: options.lishogiPack,
+    getLishogiImage: options.getLishogiImage,
+  });
+  drawHandColumn(ctx, metrics, position.hands.b, "b", {
+    theme: options.theme,
+    lishogiPack: options.lishogiPack,
+    getLishogiImage: options.getLishogiImage,
+  });
+
   if (options.showTurnIndicator) {
+    ctx.font = `600 ${metrics.handFontSize}px ${UI_FONT_FAMILY}`;
+    ctx.fillStyle = options.theme.line;
+    ctx.textAlign = "left";
     ctx.fillText(`Turn: ${position.turn === "b" ? "Black" : "White"}`, metrics.originX + metrics.boardWidth - 140, metrics.originY - 26);
   }
 }
 
+function drawHandColumn(ctx, metrics, hands, side, options) {
+  const handKinds = getHandKinds(metrics.position);
+  const slotSize = metrics.handSlotSize;
+  const centerX = side === "w" ? metrics.leftHandCenterX : metrics.rightHandCenterX;
+  const startY = metrics.handStartY;
+  handKinds.forEach((kind, index) => {
+    const count = hands[kind] || 0;
+    const centerY = startY + index * metrics.handSlotGap;
+    drawShogiPiece(ctx, centerX, centerY, slotSize, side, {
+      label: options.theme.render(kind),
+      image: options.getLishogiImage(options.lishogiPack, side, kind),
+      promoted: false,
+      dimmed: count === 0,
+      count: count > 0 ? `x${count}` : "",
+      scale: 2,
+    });
+  });
+}
+
 function drawShogiPiece(ctx, centerX, centerY, cell, side, pieceVisual) {
+  const pieceScale = pieceVisual.scale || 1.08;
+  const scaledCell = cell * pieceScale;
   ctx.save();
   ctx.translate(centerX, centerY);
+  if (pieceVisual.dimmed) {
+    ctx.globalAlpha = 0.3;
+  }
   if (side === "w" && !pieceVisual.image) {
     ctx.rotate(Math.PI);
   }
   if (pieceVisual.image && pieceVisual.image.complete && pieceVisual.image.naturalWidth > 0) {
-    const imageSize = cell * 0.88;
+    const imageSize = scaledCell * 0.88;
     ctx.drawImage(pieceVisual.image, -imageSize / 2, -imageSize / 2, imageSize, imageSize);
-    ctx.restore();
-    return;
-  }
-  ctx.fillStyle = "#f7ebc4";
-  ctx.strokeStyle = "#6b4c21";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(0, -cell * 0.42);
-  ctx.lineTo(cell * 0.36, -cell * 0.18);
-  ctx.lineTo(cell * 0.28, cell * 0.42);
-  ctx.lineTo(-cell * 0.28, cell * 0.42);
-  ctx.lineTo(-cell * 0.36, -cell * 0.18);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-  ctx.fillStyle = side === "b" ? "#1d1a16" : "#8b2220";
-  ctx.font = `700 ${cell * 0.36}px ${CHINESE_FONT_FAMILY}`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  const lines = pieceVisual.label.length > 3 ? [pieceVisual.label.slice(0, 4), pieceVisual.label.slice(4)] : [pieceVisual.label];
-  lines.forEach((line, index) => ctx.fillText(line, 0, (index - (lines.length - 1) / 2) * cell * 0.25));
-  if (pieceVisual.promoted) {
-    ctx.fillStyle = "#b8841b";
+  } else {
+    ctx.fillStyle = "#f7ebc4";
+    ctx.strokeStyle = "#6b4c21";
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(cell * 0.16, cell * 0.18, cell * 0.12, 0, Math.PI * 2);
+    ctx.moveTo(0, -scaledCell * 0.42);
+    ctx.lineTo(scaledCell * 0.36, -scaledCell * 0.18);
+    ctx.lineTo(scaledCell * 0.28, scaledCell * 0.42);
+    ctx.lineTo(-scaledCell * 0.28, scaledCell * 0.42);
+    ctx.lineTo(-scaledCell * 0.36, -scaledCell * 0.18);
+    ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = "#fff7df";
-    ctx.font = `700 ${cell * 0.16}px ${UI_FONT_FAMILY}`;
-    ctx.fillText("+", cell * 0.16, cell * 0.18);
+    ctx.stroke();
+    ctx.fillStyle = side === "b" ? "#1d1a16" : "#8b2220";
+    ctx.font = `700 ${scaledCell * 0.36}px ${CHINESE_FONT_FAMILY}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const lines = pieceVisual.label.length > 3 ? [pieceVisual.label.slice(0, 4), pieceVisual.label.slice(4)] : [pieceVisual.label];
+    lines.forEach((line, index) => ctx.fillText(line, 0, (index - (lines.length - 1) / 2) * scaledCell * 0.25));
+    if (pieceVisual.promoted) {
+      ctx.fillStyle = "#b8841b";
+      ctx.beginPath();
+      ctx.arc(scaledCell * 0.16, scaledCell * 0.18, scaledCell * 0.12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#fff7df";
+      ctx.font = `700 ${scaledCell * 0.16}px ${UI_FONT_FAMILY}`;
+      ctx.fillText("+", scaledCell * 0.16, scaledCell * 0.18);
+    }
   }
   ctx.restore();
+
+  if (pieceVisual.count) {
+    ctx.save();
+    ctx.fillStyle = side === "b" ? "#2c2215" : "#6f261d";
+    ctx.font = `700 ${Math.max(12, scaledCell * 0.22)}px ${UI_FONT_FAMILY}`;
+    ctx.textAlign = "right";
+    ctx.textBaseline = "bottom";
+    ctx.fillText(pieceVisual.count, centerX + scaledCell * 0.48, centerY + scaledCell * 0.48);
+    ctx.restore();
+  }
 }
 
 function getShogiMetrics(width, height, position) {
-  const usableWidth = width - 80;
+  const handKinds = getHandKinds(position);
+  const sideReserve = 220;
+  const usableWidth = width - sideReserve;
   const usableHeight = height - 150;
   const cell = Math.min(usableWidth / position.cols, usableHeight / position.rows);
   const boardWidth = cell * position.cols;
   const boardHeight = cell * position.rows;
+  const originX = (width - boardWidth) / 2;
+  const originY = (height - boardHeight) / 2;
+  const handSlotSize = Math.max(40, Math.min(56, cell * 0.92));
+  const targetExtraGap = 72;
+  const availableHandHeight = Math.min(height - 48, boardHeight + 40);
+  const maxExtraGap =
+    handKinds.length > 1
+      ? Math.max(0, (availableHandHeight - handSlotSize) / (handKinds.length - 1) - handSlotSize)
+      : targetExtraGap;
+  const handSlotGap = handSlotSize + Math.min(targetExtraGap, maxExtraGap);
+  const handCenterOffset = Math.max(48, (originX - 12) / 2);
   return {
-    originX: (width - boardWidth) / 2,
-    originY: (height - boardHeight) / 2,
+    position,
+    originX,
+    originY,
     boardWidth,
     boardHeight,
     cell,
     handFontSize: 18,
+    handSlotSize,
+    handSlotGap,
+    handStartY: originY + handSlotSize / 2,
+    leftHandCenterX: handCenterOffset,
+    rightHandCenterX: width - handCenterOffset,
+  };
+}
+
+function getShogiContentRect(canvas, position) {
+  const metrics = getShogiMetrics(canvas.width, canvas.height, position);
+  const handKinds = getHandKinds(position);
+  const padX = metrics.handSlotSize * 0.8;
+  const padTop = 36;
+  const padBottom = 22;
+  const left = Math.max(0, metrics.leftHandCenterX - metrics.handSlotSize / 2 - padX * 0.35);
+  const right = Math.min(canvas.width, metrics.rightHandCenterX + metrics.handSlotSize / 2 + padX * 0.35);
+  const top = Math.max(0, metrics.originY - padTop);
+  const bottom = Math.min(
+    canvas.height,
+    Math.max(
+      metrics.originY + metrics.boardHeight,
+      metrics.handStartY + (handKinds.length - 1) * metrics.handSlotGap + metrics.handSlotSize / 2
+    ) + padBottom
+  );
+  return {
+    x: left,
+    y: top,
+    width: right - left,
+    height: bottom - top,
+  };
+}
+
+function getShogiOutputSize(cropRect, maxSide = 720) {
+  const scale = Math.min(maxSide / cropRect.width, maxSide / cropRect.height);
+  return {
+    width: Math.round(cropRect.width * scale),
+    height: Math.round(cropRect.height * scale),
   };
 }
 
 function loadVariantPosition(variant) {
   const position = parseSfen(VARIANTS[variant].sfen);
-  applyVariantHands(position, variant);
+  applyVariantGeometry(position, variant);
+  position.hands = { b: { ...VARIANTS[variant].hands.b }, w: { ...VARIANTS[variant].hands.w } };
   return position;
 }
 
-function applyVariantHands(position, variant) {
+function applyVariantGeometry(position, variant) {
   position.cols = VARIANTS[variant].cols;
   position.rows = VARIANTS[variant].rows;
   position.promotionZoneDepth = VARIANTS[variant].promotionZoneDepth;
+  position.handKinds = [...VARIANTS[variant].handKinds];
+}
+
+function applyVariantHands(position, variant) {
+  applyVariantGeometry(position, variant);
   position.hands = { b: { ...VARIANTS[variant].hands.b }, w: { ...VARIANTS[variant].hands.w } };
+}
+
+function countSideInventory(position, side) {
+  const counts = {};
+  position.board.forEach((row) => {
+    row.forEach((square) => {
+      if (!square || square.side !== side) {
+        return;
+      }
+      const kind = square.kind.replace("+", "");
+      counts[kind] = (counts[kind] || 0) + 1;
+    });
+  });
+  Object.entries(position.hands[side] || {}).forEach(([kind, count]) => {
+    counts[kind] = (counts[kind] || 0) + count;
+  });
+  return counts;
 }
 
 function parseSfen(sfen) {
@@ -787,6 +950,7 @@ function parseSfen(sfen) {
     promotionZoneDepth: cols === 5 && rows.length === 6 ? 2 : 3,
     turn,
     hands: parseHands(hands),
+    handKinds: [...HAND_ORDER],
     moveNumber: Number(moveNumber),
   };
 }
@@ -808,6 +972,50 @@ function parseHands(text) {
     hands[side][char.toUpperCase()] = (hands[side][char.toUpperCase()] || 0) + amount;
   }
   return hands;
+}
+
+function positionToSfen(position) {
+  const placement = position.board
+    .map((row) => {
+      let empty = 0;
+      let output = "";
+      row.forEach((square) => {
+        if (!square) {
+          empty += 1;
+          return;
+        }
+        if (empty) {
+          output += String(empty);
+          empty = 0;
+        }
+        const code = square.side === "b" ? square.kind : square.kind.toLowerCase();
+        output += code.startsWith("+") ? `+${code[1]}` : code;
+      });
+      if (empty) {
+        output += String(empty);
+      }
+      return output;
+    })
+    .join("/");
+  return `${placement} ${position.turn} ${handsToSfen(position.hands)} ${position.moveNumber || 1}`;
+}
+
+function handsToSfen(hands) {
+  const tokens = [];
+  [
+    ["b", HAND_ORDER],
+    ["w", HAND_ORDER],
+  ].forEach(([side, order]) => {
+    order.forEach((kind) => {
+      const count = hands[side][kind] || 0;
+      if (!count) {
+        return;
+      }
+      const code = side === "b" ? kind : kind.toLowerCase();
+      tokens.push(`${count > 1 ? count : ""}${code}`);
+    });
+  });
+  return tokens.length ? tokens.join("") : "-";
 }
 
 function applyUsiMove(position, text) {
@@ -966,6 +1174,34 @@ function canvasPointToSquare(canvas, event, position) {
     x: clamp(Math.floor((x - metrics.originX) / metrics.cell), 0, position.cols - 1),
     y: clamp(Math.floor((y - metrics.originY) / metrics.cell), 0, position.rows - 1),
   };
+}
+
+function canvasPointToHandSlot(canvas, event, position) {
+  const rect = canvas.getBoundingClientRect();
+  const x = ((event.clientX - rect.left) / rect.width) * canvas.width;
+  const y = ((event.clientY - rect.top) / rect.height) * canvas.height;
+  const metrics = getShogiMetrics(canvas.width, canvas.height, position);
+  const side = x <= metrics.originX ? "w" : x >= metrics.originX + metrics.boardWidth ? "b" : null;
+  if (!side) {
+    return null;
+  }
+  const centerX = side === "w" ? metrics.leftHandCenterX : metrics.rightHandCenterX;
+  const half = metrics.handSlotSize / 2;
+  if (x < centerX - half || x > centerX + half) {
+    return null;
+  }
+  const handKinds = getHandKinds(position);
+  for (let index = 0; index < handKinds.length; index += 1) {
+    const centerY = metrics.handStartY + index * metrics.handSlotGap;
+    if (y >= centerY - half && y <= centerY + half) {
+      return { side, kind: handKinds[index] };
+    }
+  }
+  return null;
+}
+
+function getHandKinds(position) {
+  return position.handKinds?.length ? position.handKinds : HAND_ORDER;
 }
 
 function shogiSquareToCoords(square, cols) {
