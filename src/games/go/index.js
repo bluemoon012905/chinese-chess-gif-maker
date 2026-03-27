@@ -11,8 +11,14 @@ import {
 } from "../../core/shared.js";
 
 const GO_THEMES = {
-  kaya: { board: "#d9b56f", line: "#5e431a", bg: "#efe1be" },
-  ink: { board: "#ceb989", line: "#403423", bg: "#f3ead6" },
+  kaya: { board: "#d9b56f", line: "#5e431a", bg: "#efe1be", grain: ["rgba(255,255,255,0.06)", "rgba(94,67,26,0.05)"] },
+  ink: { board: "#ceb989", line: "#403423", bg: "#f3ead6", grain: ["rgba(255,255,255,0.04)", "rgba(64,52,35,0.06)"] },
+  walnut: { board: "#8f6848", line: "#2e1d12", bg: "#d8c2ad", grain: ["rgba(255,255,255,0.05)", "rgba(46,29,18,0.12)"] },
+  cedar: { board: "#b9784e", line: "#4a2617", bg: "#edd3be", grain: ["rgba(255,245,235,0.06)", "rgba(90,44,23,0.1)"] },
+  ashwood: { board: "#c9b08a", line: "#544632", bg: "#f1e7d8", grain: ["rgba(255,255,255,0.08)", "rgba(84,70,50,0.07)"] },
+  moss: { board: "#95a97d", line: "#f5f7f0", bg: "#dbe2cf", grain: null },
+  sage: { board: "#bcc7b0", line: "#ffffff", bg: "#eef2e8", grain: null },
+  monochrome: { board: "#ffffff", line: "#000000", bg: "#ffffff", grain: null },
 };
 
 export function mountGo(root) {
@@ -118,6 +124,12 @@ export function mountGo(root) {
               <select data-id="theme-select">
                 <option value="kaya">Kaya</option>
                 <option value="ink">Ink</option>
+                <option value="walnut">Walnut</option>
+                <option value="cedar">Cedar</option>
+                <option value="ashwood">Ashwood</option>
+                <option value="moss">Moss</option>
+                <option value="sage">Sage</option>
+                <option value="monochrome">Black & White</option>
               </select>
             </label>
             <label>
@@ -756,6 +768,7 @@ function drawGoBoard(ctx, canvas, position, options) {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = options.theme.board;
   ctx.fillRect(metrics.originX - metrics.cell * 0.7, metrics.originY - metrics.cell * 0.7, metrics.boardSpan + metrics.cell * 1.4, metrics.boardSpan + metrics.cell * 1.4);
+  drawBoardGrain(ctx, metrics, options.theme);
   ctx.strokeStyle = options.theme.line;
   ctx.lineWidth = Math.max(1.4, metrics.cell * 0.05);
   for (let i = 0; i < size; i += 1) {
@@ -848,6 +861,70 @@ function drawGoBoard(ctx, canvas, position, options) {
       ctx.restore();
     });
   }
+}
+
+function drawBoardGrain(ctx, metrics, theme) {
+  if (!theme.grain) {
+    return;
+  }
+  const boardX = metrics.originX - metrics.cell * 0.7;
+  const boardY = metrics.originY - metrics.cell * 0.7;
+  const boardWidth = metrics.boardSpan + metrics.cell * 1.4;
+  const boardHeight = metrics.boardSpan + metrics.cell * 1.4;
+  const [light, dark] = theme.grain || ["rgba(255,255,255,0.04)", "rgba(0,0,0,0.05)"];
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(boardX, boardY, boardWidth, boardHeight);
+  ctx.clip();
+
+  for (let index = 0; index < 28; index += 1) {
+    const x = boardX + (boardWidth / 28) * index;
+    const swayA = Math.sin(index * 0.7) * metrics.cell * 0.32;
+    const swayB = Math.cos(index * 1.1) * metrics.cell * 0.24;
+    const swayC = Math.sin(index * 1.6) * metrics.cell * 0.2;
+    const swayD = Math.cos(index * 2.2) * metrics.cell * 0.14;
+    ctx.strokeStyle = index % 2 === 0 ? light : dark;
+    ctx.lineWidth = Math.max(1.5, metrics.cell * (index % 5 === 0 ? 0.085 : index % 2 === 0 ? 0.045 : 0.03));
+    ctx.beginPath();
+    ctx.moveTo(x + swayA, boardY);
+    ctx.bezierCurveTo(
+      x - metrics.cell * 0.24 + swayD,
+      boardY + boardHeight * 0.14 + swayB,
+      x + metrics.cell * 0.28 - swayC,
+      boardY + boardHeight * 0.32 - swayA,
+      x + swayB,
+      boardY + boardHeight * 0.5 + swayD
+    );
+    ctx.bezierCurveTo(
+      x - metrics.cell * 0.22 - swayD,
+      boardY + boardHeight * 0.68 + swayC,
+      x + metrics.cell * 0.26 + swayA,
+      boardY + boardHeight * 0.86 - swayB,
+      x + swayC,
+      boardY + boardHeight
+    );
+    ctx.stroke();
+  }
+
+  for (let index = 0; index < 10; index += 1) {
+    const x = boardX + (boardWidth / 10) * index + Math.sin(index * 1.4) * metrics.cell * 0.18;
+    ctx.strokeStyle = index % 2 === 0 ? dark : light;
+    ctx.lineWidth = Math.max(1, metrics.cell * 0.018);
+    ctx.beginPath();
+    ctx.moveTo(x, boardY);
+    ctx.bezierCurveTo(
+      x + metrics.cell * 0.14,
+      boardY + boardHeight * 0.22,
+      x - metrics.cell * 0.16,
+      boardY + boardHeight * 0.55,
+      x + metrics.cell * 0.12,
+      boardY + boardHeight
+    );
+    ctx.stroke();
+  }
+
+  ctx.restore();
 }
 
 function getGoMetrics(width, height, size, showCoords) {

@@ -9,27 +9,6 @@ import {
   syncRangeInputs,
 } from "../../core/shared.js";
 
-const THEMES = {
-  character: {
-    id: "character",
-    board: "#d4b57b",
-    bg: "#efe3c7",
-    line: "#5e421e",
-    render(piece) {
-      return PIECE_CHARS[piece] || piece;
-    },
-  },
-  animal: {
-    id: "animal",
-    board: "#d9c08a",
-    bg: "#f3ead5",
-    line: "#5b4a2b",
-    render(piece) {
-      return PIECE_ANIMALS[piece] || piece;
-    },
-  },
-};
-
 const PIECE_CHARS = {
   K: "王",
   R: "飛",
@@ -46,49 +25,82 @@ const PIECE_CHARS = {
   "+L": "杏",
   "+P": "と",
 };
+const LISHOGI_BASE_URL = new URL("../../../assets/lishogi-standard/", import.meta.url).href;
 
-const PIECE_ANIMALS = {
-  K: "Lion",
-  R: "Hawk",
-  B: "Falcon",
-  G: "Bear",
-  S: "Fox",
-  N: "Horse",
-  L: "Stag",
-  P: "Rabbit",
-  "+R": "Dragon",
-  "+B": "Pegasus",
-  "+S": "Fox+",
-  "+N": "Horse+",
-  "+L": "Stag+",
-  "+P": "Rabbit+",
-};
+const LISHOGI_PACKS = [
+  { id: "1kanji_3d", label: "1Kanji 3D", ext: "svg" },
+  { id: "2kanji_3d", label: "2Kanji 3D", ext: "svg" },
+  { id: "alfaerie", label: "Alfaerie", ext: "svg" },
+  { id: "better_8_bit", label: "Better 8-Bit", ext: "png" },
+  { id: "characters", label: "Characters", ext: "png" },
+  { id: "dewitt_1kanji", label: "DeWitt 1Kanji", ext: "svg" },
+  { id: "dewitt_2kanji", label: "DeWitt 2Kanji", ext: "svg" },
+  { id: "dewitt_czech", label: "DeWitt Czech", ext: "svg" },
+  { id: "dobutsu", label: "Dobutsu", ext: "svg" },
+  { id: "engraved_cz", label: "Engraved CZ", ext: "svg" },
+  { id: "engraved_cz_bnw", label: "Engraved CZ BnW", ext: "svg" },
+  { id: "firi", label: "Firi", ext: "svg" },
+  { id: "glass", label: "Glass", ext: "png" },
+  { id: "greenwade", label: "Greenwade", ext: "svg" },
+  { id: "hitomoji", label: "Hitomoji", ext: "svg" },
+  { id: "international", label: "International", ext: "svg" },
+  { id: "intl_colored_2d", label: "Intl Colored 2D", ext: "svg" },
+  { id: "intl_colored_3d", label: "Intl Colored 3D", ext: "svg" },
+  { id: "intl_monochrome_2d", label: "Intl Monochrome 2D", ext: "svg" },
+  { id: "intl_portella", label: "Intl Portella", ext: "png" },
+  { id: "intl_shadowed", label: "Intl Shadowed", ext: "svg" },
+  { id: "intl_wooden_3d", label: "Intl Wooden 3D", ext: "svg" },
+  { id: "joyful", label: "Joyful", ext: "png" },
+  { id: "kanji_brown", label: "Kanji Brown", ext: "svg" },
+  { id: "kanji_guide_shadowed", label: "Kanji Guide Shadowed", ext: "svg" },
+  { id: "kanji_light", label: "Kanji Light", ext: "svg" },
+  { id: "kanji_red_wood", label: "Kanji Red Wood", ext: "svg" },
+  { id: "logy_games", label: "Logy Games", ext: "svg" },
+  { id: "mnemonic", label: "Mnemonic", ext: "svg" },
+  { id: "orangain", label: "Orangain", ext: "svg" },
+  { id: "pixel", label: "Pixel", ext: "png" },
+  { id: "portella", label: "Portella", ext: "png" },
+  { id: "portella_2kanji", label: "Portella 2Kanji", ext: "png" },
+  { id: "ryoko_1kanji", label: "Ryoko 1Kanji", ext: "svg" },
+  { id: "shogi_bnw", label: "Shogi BnW", ext: "svg" },
+  { id: "shogi_cz", label: "Shogi CZ", ext: "svg" },
+  { id: "shogi_fcz", label: "Shogi FCZ", ext: "svg" },
+  { id: "simple_kanji", label: "Simple Kanji", ext: "svg" },
+  { id: "vald_opt", label: "Vald Opt", ext: "svg" },
+  { id: "valdivia", label: "Valdivia", ext: "svg" },
+  { id: "western", label: "Western", ext: "svg" },
+];
 
-const ANIMAL_SPRITE_URL = new URL("../../../assets/shogi/cute_animal_icons.png", import.meta.url).href;
-const ANIMAL_SPRITE_SIZE = 16;
-const ANIMAL_SPRITE_INDEX = {
-  K: 2,
-  R: 6,
-  B: 8,
-  G: 10,
-  S: 3,
-  N: 5,
-  L: 7,
-  P: 9,
+const LISHOGI_PIECE_CODES = {
+  K: "OU",
+  R: "HI",
+  B: "KA",
+  G: "KI",
+  S: "GI",
+  N: "KE",
+  L: "KY",
+  P: "FU",
+  "+R": "RY",
+  "+B": "UM",
+  "+S": "NG",
+  "+N": "NK",
+  "+L": "NY",
+  "+P": "TO",
 };
 
 const STANDARD_SFEN = "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1";
+const DORO_SFEN = "sgkgs/5/1ppp1/1PPP1/5/SGKGS b - 1";
 const PALETTE = ["K", "R", "B", "G", "S", "N", "L", "P", "k", "r", "b", "g", "s", "n", "l", "p", "."];
 
 const VARIANTS = {
-  standard: { label: "Standard", sfen: STANDARD_SFEN, hands: { b: {}, w: {} } },
-  doro: { label: "Doro Doro Shogi", sfen: STANDARD_SFEN, hands: { b: {}, w: {} } },
-  doroplus: { label: "Doro Doro Shogi+", sfen: STANDARD_SFEN, hands: { b: { N: 1, L: 1 }, w: { N: 1, L: 1 } } },
+  standard: { label: "Standard", sfen: STANDARD_SFEN, cols: 9, rows: 9, promotionZoneDepth: 3, hands: { b: {}, w: {} } },
+  doro: { label: "Doro Doro Shogi", sfen: DORO_SFEN, cols: 5, rows: 6, promotionZoneDepth: 2, hands: { b: {}, w: {} } },
+  doroplus: { label: "Doro Doro Shogi+", sfen: DORO_SFEN, cols: 5, rows: 6, promotionZoneDepth: 2, hands: { b: { N: 1, L: 1 }, w: { N: 1, L: 1 } } },
 };
 
 export function mountShogi(root) {
   root.innerHTML = `
-    <div class="mode-shell">
+    <div class="mode-shell mode-shell-shogi">
       <section class="board-panel">
         <div class="board-toolbar">
           <div class="toolbar-group">
@@ -127,10 +139,8 @@ export function mountShogi(root) {
               </select>
             </label>
             <label>
-              Theme
-              <select data-id="theme-select">
-                <option value="character">Character</option>
-                <option value="animal">Animal</option>
+              Piece Skin
+              <select data-id="skin-select">
               </select>
             </label>
           </div>
@@ -196,9 +206,7 @@ export function mountShogi(root) {
   const get = (id) => root.querySelector(`[data-id="${id}"]`);
   const canvas = get("board-canvas");
   const ctx = canvas.getContext("2d");
-  const animalSpriteSheet = new Image();
-  animalSpriteSheet.src = ANIMAL_SPRITE_URL;
-  animalSpriteSheet.addEventListener("load", render);
+  const lishogiImageCache = new Map();
   const state = {
     uiMode: "edit",
     source: "manual",
@@ -215,6 +223,7 @@ export function mountShogi(root) {
     previewMove: 0,
   };
 
+  buildSkinOptions();
   buildPalette();
   canvas.addEventListener("click", handleCanvasClick);
   get("play-toggle").addEventListener("click", () => {
@@ -258,7 +267,7 @@ export function mountShogi(root) {
     }
     render();
   });
-  get("theme-select").addEventListener("change", render);
+  get("skin-select").addEventListener("change", render);
   get("load-game").addEventListener("click", loadGame);
   get("preview-slider").addEventListener("input", () => {
     state.previewMove = clamp(Number(get("preview-slider").value) || 0, 0, getActiveMoves().length);
@@ -285,8 +294,12 @@ export function mountShogi(root) {
   };
 
   function emptyPosition() {
+    const variant = VARIANTS[get("variant-select").value] || VARIANTS.standard;
     return {
-      board: Array.from({ length: 9 }, () => Array(9).fill(null)),
+      board: Array.from({ length: variant.rows }, () => Array(variant.cols).fill(null)),
+      cols: variant.cols,
+      rows: variant.rows,
+      promotionZoneDepth: variant.promotionZoneDepth,
       turn: "b",
       hands: { b: {}, w: {} },
       moveNumber: 1,
@@ -319,7 +332,20 @@ export function mountShogi(root) {
     renderPalette();
   }
 
+  function buildSkinOptions() {
+    const select = get("skin-select");
+    select.innerHTML = "";
+    LISHOGI_PACKS.forEach((pack) => {
+      const option = document.createElement("option");
+      option.value = pack.id;
+      option.textContent = pack.label;
+      select.append(option);
+    });
+    select.value = "kanji_light";
+  }
+
   function renderPalette() {
+    const activePack = getSelectedLishogiPack();
     get("palette").querySelectorAll(".palette-option").forEach((button) => {
       button.classList.toggle("active", button.dataset.piece === state.manual.paletteSelection);
       const badge = button.querySelector(".palette-piece");
@@ -327,13 +353,14 @@ export function mountShogi(root) {
         return;
       }
       const piece = button.dataset.piece;
-      const theme = THEMES[get("theme-select").value] || THEMES.character;
-      const spriteIndex = theme.id === "animal" ? getAnimalSpriteIndex(piece.toUpperCase()) : null;
-      badge.textContent = spriteIndex === null ? theme.render(piece.toUpperCase()) : "";
-      badge.style.backgroundImage = spriteIndex === null ? "" : `url("${ANIMAL_SPRITE_URL}")`;
-      badge.style.backgroundPosition = spriteIndex === null ? "" : `${-spriteIndex * ANIMAL_SPRITE_SIZE}px 0`;
-      badge.style.backgroundSize = spriteIndex === null ? "" : `${ANIMAL_SPRITE_SIZE * 12}px ${ANIMAL_SPRITE_SIZE}px`;
-      badge.classList.toggle("sprite", spriteIndex !== null);
+      const lishogiImage = getLishogiImage(activePack, piece === piece.toUpperCase() ? "b" : "w", piece.toUpperCase());
+      const hasLishogiPreview = Boolean(lishogiImage && lishogiImage.complete && lishogiImage.naturalWidth > 0);
+      badge.textContent = hasLishogiPreview ? "" : PIECE_CHARS[piece.toUpperCase()] || piece.toUpperCase();
+      badge.style.backgroundImage = hasLishogiPreview ? `url("${lishogiImage.src}")` : "";
+      badge.style.backgroundPosition = hasLishogiPreview ? "center" : "";
+      badge.style.backgroundSize = hasLishogiPreview ? "contain" : "";
+      badge.classList.remove("sprite");
+      badge.classList.add("lishogi-preview");
       badge.classList.toggle("black", piece === piece.toUpperCase());
       badge.classList.toggle("red", piece !== piece.toUpperCase());
     });
@@ -342,6 +369,9 @@ export function mountShogi(root) {
   function clonePosition(position) {
     return {
       board: position.board.map((row) => row.map((piece) => (piece ? { ...piece } : null))),
+      cols: position.cols,
+      rows: position.rows,
+      promotionZoneDepth: position.promotionZoneDepth,
       turn: position.turn,
       hands: { b: { ...position.hands.b }, w: { ...position.hands.w } },
       moveNumber: position.moveNumber,
@@ -412,6 +442,7 @@ export function mountShogi(root) {
   }
 
   function render() {
+    const activePack = getSelectedLishogiPack();
     renderPalette();
     const previewSlider = get("preview-slider");
     const activeMoves = getActiveMoves();
@@ -438,8 +469,9 @@ export function mountShogi(root) {
         ? "Editor mode places pieces directly on the board."
         : "Play mode allows piece movement on the current setup.";
     drawShogiBoard(ctx, canvas, active, {
-      theme: THEMES[get("theme-select").value] || THEMES.character,
-      animalSpriteSheet,
+      theme: getShogiTheme(),
+      lishogiPack: activePack,
+      getLishogiImage,
       showTurnIndicator: get("show-turn").checked,
       selectedSquare: state.manual.selectedSquare,
       legalMoves: state.manual.legalMoves,
@@ -447,7 +479,7 @@ export function mountShogi(root) {
   }
 
   function handleCanvasClick(event) {
-    const square = canvasPointToSquare(canvas, event);
+    const square = canvasPointToSquare(canvas, event, state.manual.baseState);
     if (!square) {
       return;
     }
@@ -511,8 +543,9 @@ export function mountShogi(root) {
     for (let moveIndex = range.start; moveIndex <= range.end; moveIndex += 1) {
       const frameCanvas = createBoardCanvas(720, 820);
       drawShogiBoard(frameCanvas.getContext("2d"), frameCanvas, activePositions[moveIndex] || activePositions[0], {
-        theme: THEMES[get("theme-select").value] || THEMES.character,
-        animalSpriteSheet,
+        theme: getShogiTheme(),
+        lishogiPack: getSelectedLishogiPack(),
+        getLishogiImage,
         showTurnIndicator: get("show-turn").checked,
       });
       frames.push(frameCanvas);
@@ -532,26 +565,66 @@ export function mountShogi(root) {
       get("gif-status").textContent = error.message;
     }
   }
+
+  function getShogiTheme() {
+    return {
+      id: "lishogi",
+      label: "Lishogi",
+      board: "#d5be8b",
+      bg: "#f1e8d3",
+      line: "#5a4522",
+      render(piece) {
+        return PIECE_CHARS[piece] || piece;
+      },
+    };
+  }
+
+  function getSelectedLishogiPack() {
+    return LISHOGI_PACKS.find((pack) => pack.id === get("skin-select").value) || LISHOGI_PACKS[0];
+  }
+
+  function getLishogiImage(pack, side, kind) {
+    if (!pack) {
+      return null;
+    }
+    const code = LISHOGI_PIECE_CODES[kind];
+    if (!code) {
+      return null;
+    }
+    const key = `${pack.id}:${side}:${code}`;
+    if (lishogiImageCache.has(key)) {
+      return lishogiImageCache.get(key);
+    }
+    const image = new Image();
+    image.src = new URL(`${pack.id}/${side === "b" ? "0" : "1"}${code}.${pack.ext}`, LISHOGI_BASE_URL).href;
+    image.addEventListener("load", render);
+    image.addEventListener("error", render);
+    lishogiImageCache.set(key, image);
+    return image;
+  }
 }
 
 function drawShogiBoard(ctx, canvas, position, options) {
-  const metrics = getShogiMetrics(canvas.width, canvas.height);
+  const metrics = getShogiMetrics(canvas.width, canvas.height, position);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = options.theme.bg;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = options.theme.board;
-  ctx.fillRect(metrics.originX, metrics.originY, metrics.boardSize, metrics.boardSize);
+  ctx.fillRect(metrics.originX, metrics.originY, metrics.boardWidth, metrics.boardHeight);
   ctx.strokeStyle = options.theme.line;
   ctx.lineWidth = 2.2;
-  for (let index = 0; index <= 9; index += 1) {
+  for (let index = 0; index <= position.cols; index += 1) {
     const offset = metrics.originX + index * metrics.cell;
     ctx.beginPath();
     ctx.moveTo(offset, metrics.originY);
-    ctx.lineTo(offset, metrics.originY + metrics.boardSize);
+    ctx.lineTo(offset, metrics.originY + metrics.boardHeight);
     ctx.stroke();
+  }
+  for (let index = 0; index <= position.rows; index += 1) {
+    const offset = metrics.originY + index * metrics.cell;
     ctx.beginPath();
-    ctx.moveTo(metrics.originX, metrics.originY + index * metrics.cell);
-    ctx.lineTo(metrics.originX + metrics.boardSize, metrics.originY + index * metrics.cell);
+    ctx.moveTo(metrics.originX, offset);
+    ctx.lineTo(metrics.originX + metrics.boardWidth, offset);
     ctx.stroke();
   }
 
@@ -566,8 +639,8 @@ function drawShogiBoard(ctx, canvas, position, options) {
     ctx.fill();
   });
 
-  for (let y = 0; y < 9; y += 1) {
-    for (let x = 0; x < 9; x += 1) {
+  for (let y = 0; y < position.rows; y += 1) {
+    for (let x = 0; x < position.cols; x += 1) {
       const square = position.board[y][x];
       if (!square) {
         continue;
@@ -576,8 +649,7 @@ function drawShogiBoard(ctx, canvas, position, options) {
       const centerY = metrics.originY + y * metrics.cell + metrics.cell / 2;
       drawShogiPiece(ctx, centerX, centerY, metrics.cell, square.side, {
         label: options.theme.render(square.kind),
-        spriteIndex: options.theme.id === "animal" ? getAnimalSpriteIndex(square.kind) : null,
-        spriteSheet: options.animalSpriteSheet,
+        image: options.getLishogiImage(options.lishogiPack, square.side, square.kind),
         promoted: square.kind.startsWith("+"),
       });
     }
@@ -586,18 +658,24 @@ function drawShogiBoard(ctx, canvas, position, options) {
   ctx.font = `600 ${metrics.handFontSize}px ${UI_FONT_FAMILY}`;
   ctx.fillStyle = options.theme.line;
   ctx.textAlign = "left";
-  ctx.fillText(`Black hand: ${formatHands(position.hands.b)}`, metrics.originX, metrics.originY + metrics.boardSize + 38);
+  ctx.fillText(`Black hand: ${formatHands(position.hands.b)}`, metrics.originX, metrics.originY + metrics.boardHeight + 38);
   ctx.fillText(`White hand: ${formatHands(position.hands.w)}`, metrics.originX, metrics.originY - 26);
   if (options.showTurnIndicator) {
-    ctx.fillText(`Turn: ${position.turn === "b" ? "Black" : "White"}`, metrics.originX + metrics.boardSize - 140, metrics.originY - 26);
+    ctx.fillText(`Turn: ${position.turn === "b" ? "Black" : "White"}`, metrics.originX + metrics.boardWidth - 140, metrics.originY - 26);
   }
 }
 
 function drawShogiPiece(ctx, centerX, centerY, cell, side, pieceVisual) {
   ctx.save();
   ctx.translate(centerX, centerY);
-  if (side === "w") {
+  if (side === "w" && !pieceVisual.image) {
     ctx.rotate(Math.PI);
+  }
+  if (pieceVisual.image && pieceVisual.image.complete && pieceVisual.image.naturalWidth > 0) {
+    const imageSize = cell * 0.88;
+    ctx.drawImage(pieceVisual.image, -imageSize / 2, -imageSize / 2, imageSize, imageSize);
+    ctx.restore();
+    return;
   }
   ctx.fillStyle = "#f7ebc4";
   ctx.strokeStyle = "#6b4c21";
@@ -611,48 +689,38 @@ function drawShogiPiece(ctx, centerX, centerY, cell, side, pieceVisual) {
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
-  if (pieceVisual.spriteSheet && pieceVisual.spriteSheet.complete && pieceVisual.spriteIndex !== null) {
-    const spriteSize = cell * 0.62;
-    ctx.save();
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(
-      pieceVisual.spriteSheet,
-      pieceVisual.spriteIndex * ANIMAL_SPRITE_SIZE,
-      0,
-      ANIMAL_SPRITE_SIZE,
-      ANIMAL_SPRITE_SIZE,
-      -spriteSize / 2,
-      -cell * 0.1,
-      spriteSize,
-      spriteSize
-    );
-    ctx.restore();
-    if (pieceVisual.promoted) {
-      ctx.fillStyle = "#b8841b";
-      ctx.beginPath();
-      ctx.arc(cell * 0.16, cell * 0.18, cell * 0.12, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#fff7df";
-      ctx.font = `700 ${cell * 0.16}px ${UI_FONT_FAMILY}`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("+", cell * 0.16, cell * 0.18);
-    }
-  } else {
-    ctx.fillStyle = side === "b" ? "#1d1a16" : "#8b2220";
-    ctx.font = `700 ${cell * 0.36}px ${CHINESE_FONT_FAMILY}`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    const lines = pieceVisual.label.length > 3 ? [pieceVisual.label.slice(0, 4), pieceVisual.label.slice(4)] : [pieceVisual.label];
-    lines.forEach((line, index) => ctx.fillText(line, 0, (index - (lines.length - 1) / 2) * cell * 0.25));
+  ctx.fillStyle = side === "b" ? "#1d1a16" : "#8b2220";
+  ctx.font = `700 ${cell * 0.36}px ${CHINESE_FONT_FAMILY}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const lines = pieceVisual.label.length > 3 ? [pieceVisual.label.slice(0, 4), pieceVisual.label.slice(4)] : [pieceVisual.label];
+  lines.forEach((line, index) => ctx.fillText(line, 0, (index - (lines.length - 1) / 2) * cell * 0.25));
+  if (pieceVisual.promoted) {
+    ctx.fillStyle = "#b8841b";
+    ctx.beginPath();
+    ctx.arc(cell * 0.16, cell * 0.18, cell * 0.12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#fff7df";
+    ctx.font = `700 ${cell * 0.16}px ${UI_FONT_FAMILY}`;
+    ctx.fillText("+", cell * 0.16, cell * 0.18);
   }
   ctx.restore();
 }
 
-function getShogiMetrics(width, height) {
-  const boardSize = Math.min(width - 80, height - 150);
-  const cell = boardSize / 9;
-  return { originX: (width - boardSize) / 2, originY: 70, boardSize, cell, handFontSize: 18 };
+function getShogiMetrics(width, height, position) {
+  const usableWidth = width - 80;
+  const usableHeight = height - 150;
+  const cell = Math.min(usableWidth / position.cols, usableHeight / position.rows);
+  const boardWidth = cell * position.cols;
+  const boardHeight = cell * position.rows;
+  return {
+    originX: (width - boardWidth) / 2,
+    originY: (height - boardHeight) / 2,
+    boardWidth,
+    boardHeight,
+    cell,
+    handFontSize: 18,
+  };
 }
 
 function loadVariantPosition(variant) {
@@ -662,13 +730,31 @@ function loadVariantPosition(variant) {
 }
 
 function applyVariantHands(position, variant) {
+  position.cols = VARIANTS[variant].cols;
+  position.rows = VARIANTS[variant].rows;
+  position.promotionZoneDepth = VARIANTS[variant].promotionZoneDepth;
   position.hands = { b: { ...VARIANTS[variant].hands.b }, w: { ...VARIANTS[variant].hands.w } };
 }
 
 function parseSfen(sfen) {
   const [placement, turn = "b", hands = "-", moveNumber = "1"] = sfen.split(/\s+/);
   const rows = placement.split("/");
-  const board = Array.from({ length: 9 }, () => Array(9).fill(null));
+  const cols = rows.reduce((max, row) => {
+    let width = 0;
+    for (let index = 0; index < row.length; index += 1) {
+      const char = row[index];
+      if (/\d/.test(char)) {
+        width += Number(char);
+      } else if (char === "+") {
+        index += 1;
+        width += 1;
+      } else {
+        width += 1;
+      }
+    }
+    return Math.max(max, width);
+  }, 0);
+  const board = Array.from({ length: rows.length }, () => Array(cols).fill(null));
   rows.forEach((row, y) => {
     let x = 0;
     for (let index = 0; index < row.length; index += 1) {
@@ -686,7 +772,15 @@ function parseSfen(sfen) {
       }
     }
   });
-  return { board, turn, hands: parseHands(hands), moveNumber: Number(moveNumber) };
+  return {
+    board,
+    cols,
+    rows: rows.length,
+    promotionZoneDepth: cols === 5 && rows.length === 6 ? 2 : 3,
+    turn,
+    hands: parseHands(hands),
+    moveNumber: Number(moveNumber),
+  };
 }
 
 function parseHands(text) {
@@ -715,7 +809,7 @@ function applyUsiMove(position, text) {
   }
   if (move.includes("*")) {
     const [piece, targetText] = move.split("*");
-    const target = shogiSquareToCoords(targetText);
+    const target = shogiSquareToCoords(targetText, position.cols);
     const side = position.turn;
     const stock = position.hands[side][piece];
     if (!stock || position.board[target.y][target.x]) {
@@ -727,8 +821,8 @@ function applyUsiMove(position, text) {
       delete position.hands[side][piece];
     }
   } else {
-    const from = shogiSquareToCoords(move.slice(0, 2));
-    const to = shogiSquareToCoords(move.slice(2, 4));
+    const from = shogiSquareToCoords(move.slice(0, 2), position.cols);
+    const to = shogiSquareToCoords(move.slice(2, 4), position.cols);
     const promote = move.endsWith("+");
     const piece = position.board[from.y][from.x];
     if (!piece) {
@@ -761,7 +855,7 @@ function generateShogiMoves(position, x, y) {
   directions.forEach((direction) => {
     let nx = x + direction.dx;
     let ny = y + direction.dy;
-    while (nx >= 0 && nx < 9 && ny >= 0 && ny < 9) {
+    while (nx >= 0 && nx < position.cols && ny >= 0 && ny < position.rows) {
       const target = position.board[ny][nx];
       if (target && target.side === piece.side) {
         break;
@@ -769,9 +863,9 @@ function generateShogiMoves(position, x, y) {
       moves.push({
         from: { x, y },
         to: { x: nx, y: ny },
-        usi: `${coordsToShogiSquare(x, y)}${coordsToShogiSquare(nx, ny)}`,
-        canPromote: isPromotionAvailable(piece.kind, piece.side, y, ny),
-        mustPromote: isPromotionRequired(piece.kind, piece.side, ny),
+        usi: `${coordsToShogiSquare(x, y, position.cols)}${coordsToShogiSquare(nx, ny, position.cols)}`,
+        canPromote: isPromotionAvailable(position, piece.kind, piece.side, y, ny),
+        mustPromote: isPromotionRequired(position, piece.kind, piece.side, ny),
       });
       if (target || !direction.repeat) {
         break;
@@ -824,24 +918,26 @@ function getPieceDirections(kind, forward) {
   }
 }
 
-function isPromotionAvailable(kind, side, fromY, toY) {
+function isPromotionAvailable(position, kind, side, fromY, toY) {
   if (!canPromote(kind)) {
     return false;
   }
-  const zone = side === "b" ? [0, 1, 2] : [6, 7, 8];
-  return zone.includes(fromY) || zone.includes(toY);
+  const depth = position.promotionZoneDepth || 3;
+  return side === "b"
+    ? fromY < depth || toY < depth
+    : fromY >= position.rows - depth || toY >= position.rows - depth;
 }
 
-function isPromotionRequired(kind, side, toY) {
+function isPromotionRequired(position, kind, side, toY) {
   const base = kind.replace("+", "");
   if (!canPromote(base)) {
     return false;
   }
   if (base === "P" || base === "L") {
-    return side === "b" ? toY === 0 : toY === 8;
+    return side === "b" ? toY === 0 : toY === position.rows - 1;
   }
   if (base === "N") {
-    return side === "b" ? toY <= 1 : toY >= 7;
+    return side === "b" ? toY <= 1 : toY >= position.rows - 2;
   }
   return false;
 }
@@ -850,36 +946,32 @@ function canPromote(kind) {
   return ["R", "B", "S", "N", "L", "P"].includes(kind.replace("+", ""));
 }
 
-function canvasPointToSquare(canvas, event) {
+function canvasPointToSquare(canvas, event, position) {
   const rect = canvas.getBoundingClientRect();
   const x = ((event.clientX - rect.left) / rect.width) * canvas.width;
   const y = ((event.clientY - rect.top) / rect.height) * canvas.height;
-  const metrics = getShogiMetrics(canvas.width, canvas.height);
-  if (x < metrics.originX || x > metrics.originX + metrics.boardSize || y < metrics.originY || y > metrics.originY + metrics.boardSize) {
+  const metrics = getShogiMetrics(canvas.width, canvas.height, position);
+  if (x < metrics.originX || x > metrics.originX + metrics.boardWidth || y < metrics.originY || y > metrics.originY + metrics.boardHeight) {
     return null;
   }
   return {
-    x: clamp(Math.floor((x - metrics.originX) / metrics.cell), 0, 8),
-    y: clamp(Math.floor((y - metrics.originY) / metrics.cell), 0, 8),
+    x: clamp(Math.floor((x - metrics.originX) / metrics.cell), 0, position.cols - 1),
+    y: clamp(Math.floor((y - metrics.originY) / metrics.cell), 0, position.rows - 1),
   };
 }
 
-function shogiSquareToCoords(square) {
+function shogiSquareToCoords(square, cols) {
   return {
-    x: 9 - Number(square[0]),
+    x: cols - Number(square[0]),
     y: square[1].toLowerCase().charCodeAt(0) - 97,
   };
 }
 
-function coordsToShogiSquare(x, y) {
-  return `${9 - x}${String.fromCharCode(97 + y)}`;
+function coordsToShogiSquare(x, y, cols) {
+  return `${cols - x}${String.fromCharCode(97 + y)}`;
 }
 
 function formatHands(hands) {
   const entries = Object.entries(hands);
   return entries.length ? entries.map(([piece, count]) => `${piece}x${count}`).join(" ") : "none";
-}
-
-function getAnimalSpriteIndex(kind) {
-  return ANIMAL_SPRITE_INDEX[kind.replace("+", "")] ?? null;
 }
