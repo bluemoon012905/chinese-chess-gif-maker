@@ -348,6 +348,7 @@ export function mountChess(root) {
   function setCurrentBranch() {
     state.currentPath = state.branchPaths[state.branchIndex] || [];
     state.currentStates = buildStatesForPath(state.currentPath, state.tree.initialState || createInitialState());
+    resetRangeInputs();
     state.previewPly = clamp(state.previewPly, 0, state.currentPath.length);
     clearSelection();
     render();
@@ -372,9 +373,16 @@ export function mountChess(root) {
       current = applyMove(cloneState(current), move);
       state.manual.states.push(cloneState(current));
     });
+    resetRangeInputs();
     state.previewPly = clamp(state.previewPly, 0, state.manual.history.length);
     seedManualBranchOptions();
     clearSelection();
+  }
+
+  function resetRangeInputs() {
+    const total = getActiveHistory().length;
+    get("range-start").value = "0";
+    get("range-end").value = String(total);
   }
 
   function normalizeExportInputs() {

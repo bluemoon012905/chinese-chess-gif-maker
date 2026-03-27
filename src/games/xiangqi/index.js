@@ -292,6 +292,7 @@ export function mountXiangqi(root) {
       state.turn = "w";
       state.history = [];
       state.playbackIndex = 0;
+      resetExportRange();
       clearSelection();
       render();
     });
@@ -300,6 +301,7 @@ export function mountXiangqi(root) {
       loadFen(START_FEN);
       state.history = [];
       state.playbackIndex = 0;
+      resetExportRange();
       render();
     });
 
@@ -308,6 +310,7 @@ export function mountXiangqi(root) {
         loadFen(`${fenInput.value.trim()} ${sideSelect.value}`.trim());
         state.history = [];
         state.playbackIndex = 0;
+        resetExportRange();
         clearSelection();
         render();
       } catch (error) {
@@ -468,6 +471,11 @@ export function mountXiangqi(root) {
     };
   }
 
+  function resetExportRange() {
+    rangeStartInput.value = "0";
+    rangeEndInput.value = String(state.history.length);
+  }
+
   function handleSquareClick(x, y) {
     if (state.mode === "edit") {
       const nextBoard = cloneBoard(state.board);
@@ -605,6 +613,7 @@ export function mountXiangqi(root) {
     state.baseTurn = hasFen ? sideSelect.value : "w";
     state.turn = state.baseTurn;
     state.history = importedHistory;
+    resetExportRange();
     state.playbackIndex = importedHistory.length;
     applyPlaybackIndex();
   }
@@ -636,6 +645,7 @@ export function mountXiangqi(root) {
         state.history = state.history.slice(0, state.playbackIndex);
       }
       state.history.push({ notation: normalizeMoveNotation(move), from: move.from, to: move.to, piece: movingPiece, capture });
+      resetExportRange();
       state.playbackIndex = state.history.length;
       state.turn = state.turn === "w" ? "b" : "w";
     }
@@ -655,6 +665,7 @@ export function mountXiangqi(root) {
       return;
     }
     state.history = state.history.slice(0, -1);
+    resetExportRange();
     state.playbackIndex = state.history.length;
     applyPlaybackIndex();
   }

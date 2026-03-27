@@ -397,6 +397,7 @@ export function mountShogi(root) {
       current = applyUsiMove(clonePosition(current), move.usi);
       state.manual.positions.push(clonePosition(current));
     });
+    resetRangeInputs();
     state.previewMove = clamp(state.previewMove, 0, state.manual.moves.length);
     clearSelection();
   }
@@ -419,6 +420,7 @@ export function mountShogi(root) {
       state.source = "imported";
       state.importedPositions = positions;
       state.importedMoves = moveTokens.map((usi) => ({ usi, label: usi }));
+      resetRangeInputs();
       state.previewMove = 0;
       clearSelection();
       render();
@@ -431,6 +433,12 @@ export function mountShogi(root) {
     const range = normalizeRange(get("range-start").value, get("range-end").value, getActiveMoves().length);
     get("range-start").value = String(range.start);
     get("range-end").value = String(range.end);
+  }
+
+  function resetRangeInputs() {
+    const total = getActiveMoves().length;
+    get("range-start").value = "0";
+    get("range-end").value = String(total);
   }
 
   function getRange() {
